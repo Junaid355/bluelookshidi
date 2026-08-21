@@ -1,0 +1,4154 @@
+--[[
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                     BLUE LOCK: METAVISION SUPREME v7.0                       ║
+    ║           The Ultimate Autonomous Suit, Cyber Glass UI & Physics Engine      ║
+    ║        Metavision Aim • God GK • Ball Telekinesis • Anti-Steal • ESP Suite   ║
+    ║        Auto-Farm • Auto-Gacha • Pass Lane ESP • Cyber HUD • Orbit Shield     ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+
+local cloneref = cloneref or function(o) return o end
+local gethui = gethui or function() return nil end
+
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local RunService = cloneref(game:GetService("RunService"))
+local Players = cloneref(game:GetService("Players"))
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local TweenService = cloneref(game:GetService("TweenService"))
+local CoreGui = cloneref(game:GetService("CoreGui"))
+local Workspace = cloneref(game:GetService("Workspace"))
+local TeleportService = cloneref(game:GetService("TeleportService"))
+local HttpService = cloneref(game:GetService("HttpService"))
+local Stats = cloneref(game:GetService("Stats"))
+local Camera = Workspace.CurrentCamera
+
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Safe stealth UI Parent container
+local function GetSafeUIParent()
+    if gethui then
+        local success, res = pcall(gethui)
+        if success and res then return res end
+    end
+    local success, res = pcall(function() return CoreGui end)
+    if success and res then return res end
+    return LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local getgenv = getgenv or function() return _G end
+local SESSION_ID = tostring(math.random(100000, 999999)) .. "_" .. tostring(tick())
+getgenv()._LUNAR_CURRENT_SESSION = SESSION_ID
+
+if getgenv()._LUNAR_CLEANUP_ALL then
+    pcall(getgenv()._LUNAR_CLEANUP_ALL)
+end
+
+local ActiveConnections = {}
+local function SafeConnect(signal, fn)
+    local conn = signal:Connect(fn)
+    table.insert(ActiveConnections, conn)
+    return conn
+end
+
+getgenv()._LUNAR_CLEANUP_ALL = function()
+    for _, c in ipairs(ActiveConnections) do
+        pcall(function() c:Disconnect() end)
+    end
+    table.clear(ActiveConnections)
+    pcall(function()
+        if CoreGui:FindFirstChild("LunarHub") then CoreGui.LunarHub:Destroy() end
+        if LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("LunarHub") then
+            LocalPlayer.PlayerGui.LunarHub:Destroy()
+        end
+    end)
+end
+
+local function IsSessionActive()
+    return getgenv()._LUNAR_CURRENT_SESSION == SESSION_ID
+end
+
+local UI_PARENT = GetSafeUIParent()
+
+-- ==============================================================================
+--                               CONFIGURATION
+-- ==============================================================================
+local Config = {
+    -- ⚽ Metavision Aimbot & Ballistics
+    SilentAim = true,
+    GoalOverride = "Auto (Team-Based)",
+    ShotTargetMode = "Top Corners",
+    AutoGoal = true,
+    MaxShotPower = true,
+    ShotPower = 280,
+    SuperRocketShot = true,
+    BallisticArc = true,
+    AutoCurve = true,
+    CurveIntensity = 25,
+    TopspinDip = 12,
+    Knuckleball = true,
+    KnuckleIntensity = 15,
+    AutoPass = true,
+    AutoPassKey = Enum.KeyCode.Z,
+    PassMode = "Smart Through Ball",
+    PassLeadingMultiplier = 1.4,
+    PassPower = 85,
+    ReboundMagnet = true,
+    InstantGoalKey = Enum.KeyCode.G,
+    TrajectoryESP = true,
+
+    -- 🧲 Ball Control Suite & Physics Studio
+    BallControl = false,
+    BallGlue = false,
+    BallGlueDistance = 3.2,
+    AntiStealShield = true,
+    SkillChaining = true,
+    BallTelekinesis = false,
+    BallTelekinesisKey = Enum.KeyCode.V,
+    BringBallKey = Enum.KeyCode.B,
+    FreezeBallKey = Enum.KeyCode.P,
+    BallOrbitalShield = false,
+    BallOrbitSpeed = 6,
+    BallOrbitRadius = 3.5,
+    AirJuggle = false,
+    AirJuggleHeight = 7.5,
+    AutoClaimBall = false,
+    BallMagnet = false,
+    BallMagnetDistance = 30,
+    AutoTPToBall = false,
+    AutoRainbowFlick = false,
+
+    -- 🏆 Autonomous Match Automation & Auto-Farm
+    GoalAutoFarm = false,
+    AutoFarmDelay = 0.5,
+    AutoRollCharacter = false,
+    RollDelay = 0.05,
+    TargetRollCharacter = "Any Secret / Mythic",
+    AutoRollMVP = false,
+    AutoRollEmote = false,
+    AutoRedeemCodes = false,
+
+    -- 🧤 Autonomous Goalkeeper (Auto GK Godmode)
+    AutoGK = false,
+    AutoGKOnlyWhenGKRole = true,
+    GodGK = true,
+    SuperhumanGKPredictor = true,
+    AntiChipSweeper = true,
+    GKCounterAttack = true,
+    GKAutoCounterClear = true,
+    AutoGKDive = false,
+    AutoGKDistance = 35,
+    AutoGKPositioning = false,
+    AutoGKDiveKey = Enum.KeyCode.Q,
+
+    -- 🛡️ Defense & Reach
+    AutoTackle = true,
+    AutoStealTeleport = false,
+    AutoStealEnemiesOnly = true,
+    TackleDistance = 18,
+    TackleKey = Enum.KeyCode.F,
+    HitboxExpander = false,
+    HitboxSize = 7,
+    HitboxVisible = false,
+    AntiRagdoll = true,
+    AntiStun = true,
+
+    -- ⚡ Movement & Mobility
+    SpeedBoost = false,
+    WalkSpeed = 32,
+    SpeedKey = Enum.KeyCode.C,
+    JumpPowerBoost = false,
+    JumpPower = 65,
+    InfiniteStamina = true,
+    InfiniteDash = true,
+    DashBurst = false,
+    DashBurstKey = Enum.KeyCode.E,
+    AutoHeaderVolley = false,
+    AutoDribble = true,
+    DribbleKey = Enum.KeyCode.R,
+    Fly = false,
+    FlySpeed = 55,
+    FlyKey = Enum.KeyCode.X,
+    Noclip = false,
+    NoclipKey = Enum.KeyCode.N,
+
+    -- 🔥 Combat & Flow
+    AutoAwakening = false,
+    AwakeningKey = Enum.KeyCode.U,
+    AutoMash = true,
+    AutoWinQTE = true,
+
+    -- 👁️ Metavision Visuals & ESP Studio
+    BallESP = true,
+    BallTracer = true,
+    PlayerESP = true,
+    PlayerBox = true,
+    PlayerInfoESP = true,
+    PassLaneESP = true,
+    TackleDangerZoneESP = true,
+    TackleDangerRadius = 16,
+    GoalESP = true,
+    AntiCameraShake = true,
+    CyberHUD = true,
+
+    -- 🤡 Human Trolling Suite & Celebrations
+    HumanTrolling = true,
+    FakeShotFeint = true,
+    FakeShotKey = Enum.KeyCode.J,
+    GoalLineTease = false,
+    CrossbarDink = false,
+    AnkleBreakerBait = true,
+    TrollEmoteOnGoal = true,
+    SelectedGoalEmote = "Auto (Random)",
+
+    -- 🌐 Server & Utilities
+    TPBallKey = Enum.KeyCode.T,
+    TPGoalKey = Enum.KeyCode.H,
+    ServerHopKey = Enum.KeyCode.K,
+    ToggleUIKey = Enum.KeyCode.LeftControl,
+    StaffDetector = true,
+    AutoLeaveOnStaff = false,
+    AutoJoinTeam = true,
+    TargetTeam = "Auto (Any Open)",
+    TargetRole = "CF",
+
+    -- 📱 Mobile & Performance
+    MobileMode = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled,
+    LowLagMode = false,
+    Notifications = true,
+
+    -- 💾 Config Management
+    AutoSave = true
+}
+
+-- Session Stat Tracking
+local SessionStats = {
+    GoalsScored = 0,
+    SavesMade = 0,
+    MatchesWon = 0
+}
+
+-- ==============================================================================
+--                               CONFIG MANAGER
+-- ==============================================================================
+local ConfigFolder = "LunarHub"
+local ConfigFileName = "LunarHub/BlueLockConfig.json"
+
+local function SerializeConfig()
+    local serializable = {}
+    for k, v in pairs(Config) do
+        if typeof(v) == "EnumItem" then
+            serializable[k] = "Enum.KeyCode." .. v.Name
+        else
+            serializable[k] = v
+        end
+    end
+    return serializable
+end
+
+local function DeserializeConfig(tbl)
+    for k, v in pairs(tbl) do
+        if type(v) == "string" and string.sub(v, 1, 13) == "Enum.KeyCode." then
+            local keyName = string.sub(v, 14)
+            if Enum.KeyCode[keyName] then
+                Config[k] = Enum.KeyCode[keyName]
+            end
+        else
+            Config[k] = v
+        end
+    end
+end
+
+local function SaveConfig(silent)
+    pcall(function()
+        if writefile then
+            if makefolder and not isfolder(ConfigFolder) then
+                makefolder(ConfigFolder)
+            end
+            local encoded = HttpService:JSONEncode(SerializeConfig())
+            writefile(ConfigFileName, encoded)
+            if not silent then
+                Notify("Config Manager", "Settings saved to " .. ConfigFileName .. "!", 1.5, "💾")
+            end
+        else
+            if not silent then
+                Notify("Config Manager", "File system unsupported on this executor.", 2, "⚠️")
+            end
+        end
+    end)
+end
+
+local function LoadConfig(silent)
+    local loaded = false
+    pcall(function()
+        if readfile and isfile and isfile(ConfigFileName) then
+            local raw = readfile(ConfigFileName)
+            local decoded = HttpService:JSONDecode(raw)
+            if decoded and type(decoded) == "table" then
+                DeserializeConfig(decoded)
+                loaded = true
+                if not silent then
+                    Notify("Config Manager", "Settings loaded from file!", 1.5, "📂")
+                end
+            end
+        end
+    end)
+    return loaded
+end
+
+-- Auto-load saved config on startup
+LoadConfig(true)
+
+-- Audio Feedback FX
+local function PlaySound(soundId, pitch)
+    pcall(function()
+        local s = Instance.new("Sound")
+        s.SoundId = soundId or "rbxassetid://6895079853"
+        s.Volume = 0.45
+        s.Pitch = pitch or 1
+        s.Parent = Workspace
+        s:Play()
+        game:GetService("Debris"):AddItem(s, 2)
+    end)
+end
+
+-- ==============================================================================
+--                               SERVER UTILITIES
+-- ==============================================================================
+local HttpRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+local QueueOnTeleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
+
+local function QueueScript()
+    if QueueOnTeleport then
+        pcall(function()
+            QueueOnTeleport([[
+                task.wait(1.5)
+                if isfile and isfile("BlueLockHub.luau") then
+                    loadstring(readfile("BlueLockHub.luau"))()
+                end
+            ]])
+        end)
+    end
+end
+
+local function RejoinServer()
+    PlaySound(nil, 1)
+    QueueScript()
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end
+
+local function ServerHop(lowPlayerCount)
+    PlaySound(nil, 1.1)
+    QueueScript()
+    if not HttpRequest then
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+        return
+    end
+
+    local sortOrder = lowPlayerCount and "Asc" or "Desc"
+    local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=%s&limit=100", tostring(game.PlaceId), sortOrder)
+    
+    local success, response = pcall(function()
+        return HttpRequest({Url = url, Method = "GET"})
+    end)
+
+    if success and response and response.Body then
+        local data = HttpService:JSONDecode(response.Body)
+        if data and data.data then
+            local validServers = {}
+            for _, s in ipairs(data.data) do
+                if type(s) == "table" and s.id ~= game.JobId and s.playing < (s.maxPlayers or 12) and s.playing > 0 then
+                    table.insert(validServers, s.id)
+                end
+            end
+
+            if #validServers > 0 then
+                local chosenId = validServers[math.random(1, #validServers)]
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, chosenId, LocalPlayer)
+                return
+            end
+        end
+    end
+
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end
+
+-- ==============================================================================
+--                               GAME REMOTES & UTILS
+-- ==============================================================================
+local Events = ReplicatedStorage:FindFirstChild("Events")
+local Modules = ReplicatedStorage:FindFirstChild("Modules")
+local Admins = {}
+local BanAdmins = {}
+
+pcall(function()
+    if Modules and Modules:FindFirstChild("Admins") then Admins = require(Modules.Admins) end
+    if Modules and Modules:FindFirstChild("BanAdmins") then BanAdmins = require(Modules.BanAdmins) end
+end)
+
+local function GetPlayerTeamName(plr)
+    if not plr or not plr:IsA("Player") then return nil end
+    if plr.Team then
+        return plr.Team.Name
+    end
+    local attrTeam = plr:GetAttribute("Team") or plr:GetAttribute("TeamName") or plr:GetAttribute("Side")
+    if attrTeam and tostring(attrTeam) ~= "" then
+        return tostring(attrTeam)
+    end
+    local leaderstats = plr:FindFirstChild("leaderstats")
+    if leaderstats then
+        local teamVal = leaderstats:FindFirstChild("Team") or leaderstats:FindFirstChild("TeamName")
+        if teamVal and teamVal.Value and tostring(teamVal.Value) ~= "" then
+            return tostring(teamVal.Value)
+        end
+    end
+    local char = plr.Character
+    if char then
+        local charTeam = char:GetAttribute("Team") or char:GetAttribute("Side")
+        if charTeam and tostring(charTeam) ~= "" then
+            return tostring(charTeam)
+        end
+    end
+    return nil
+end
+
+local function IsTeammate(plr)
+    if not plr or plr == LocalPlayer then return false end
+    local myTeam = GetPlayerTeamName(LocalPlayer)
+    local theirTeam = GetPlayerTeamName(plr)
+    
+    if myTeam and theirTeam and myTeam ~= "" and theirTeam ~= "" then
+        return string.lower(myTeam) == string.lower(theirTeam)
+    end
+    
+    if LocalPlayer.Team and plr.Team then
+        return LocalPlayer.Team == plr.Team
+    end
+    
+    return false
+end
+
+local function IsEnemy(plr)
+    if not plr or plr == LocalPlayer then return false end
+    local myTeam = GetPlayerTeamName(LocalPlayer)
+    local theirTeam = GetPlayerTeamName(plr)
+    
+    if myTeam and theirTeam and myTeam ~= "" and theirTeam ~= "" then
+        return string.lower(myTeam) ~= string.lower(theirTeam)
+    end
+    
+    if LocalPlayer.Team and plr.Team then
+        return LocalPlayer.Team ~= plr.Team
+    end
+    
+    return true
+end
+
+local function GetBall()
+    if Workspace:FindFirstChild("Ball") and Workspace.Ball:IsA("BasePart") then return Workspace.Ball end
+    if Workspace:FindFirstChild("Football") and Workspace.Football:IsA("BasePart") then return Workspace.Football end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character then
+            local b = plr.Character:FindFirstChild("Ball") or plr.Character:FindFirstChild("Football")
+            if b and b:IsA("BasePart") then return b end
+        end
+    end
+    for _, c in ipairs(Workspace:GetChildren()) do
+        if c:IsA("Model") then
+            local b = c:FindFirstChild("Ball") or c:FindFirstChild("Football")
+            if b and b:IsA("BasePart") then return b end
+        elseif (c.Name == "Ball" or c.Name == "Football" or c.Name == "SoccerBall") and c:IsA("BasePart") then
+            return c
+        end
+    end
+    return nil
+end
+
+local function GetEnemyGoal()
+    local map = Workspace:FindFirstChild("Map") or Workspace:FindFirstChild("Field")
+    
+    local p1 = Vector3.new(-234.6, 6.0, 0) -- Home Goal (Left side)
+    local p2 = Vector3.new(235.0, 6.0, 0)  -- Away Goal (Right side)
+    
+    if map then
+        local g1 = map:FindFirstChild("PlayerOneGoal")
+        local g2 = map:FindFirstChild("PlayerTwoGoal")
+        if g1 then
+            local scorePart = g1:FindFirstChild("ScoreHitbox") or g1:FindFirstChild("AutoGoal")
+            if scorePart then
+                p1 = Vector3.new(scorePart.Position.X, 6.0, scorePart.Position.Z)
+            end
+        end
+        if g2 then
+            local scorePart = g2:FindFirstChild("ScoreHitbox") or g2:FindFirstChild("AutoGoal")
+            if scorePart then
+                p2 = Vector3.new(scorePart.Position.X, 6.0, scorePart.Position.Z)
+            end
+        end
+    end
+    
+    local myTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+    local targetPos = p1
+    
+    if Config.GoalOverride == "Force Left Goal (P1)" then
+        targetPos = p1
+    elseif Config.GoalOverride == "Force Right Goal (P2)" then
+        targetPos = p2
+    elseif myTeam == "Home" then
+        targetPos = p2
+    elseif myTeam == "Away" then
+        targetPos = p1
+    else
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local lookX = Camera.CFrame.LookVector.X
+            targetPos = (lookX > 0) and p2 or p1
+        end
+    end
+    
+    local enemyGKPos = nil
+    for _, model in ipairs(Workspace:GetChildren()) do
+        if model:IsA("Model") and model ~= LocalPlayer.Character and model:FindFirstChild("HumanoidRootPart") then
+            local eHrp = model.HumanoidRootPart
+            if (eHrp.Position - targetPos).Magnitude <= 45 then
+                enemyGKPos = eHrp.Position
+                break
+            end
+        end
+    end
+    if not enemyGKPos then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Team ~= LocalPlayer.Team and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local eHrp = plr.Character.HumanoidRootPart
+                if (eHrp.Position - targetPos).Magnitude <= 45 then
+                    enemyGKPos = eHrp.Position
+                    break
+                end
+            end
+        end
+    end
+
+    local smartZ = 10.5
+    if enemyGKPos then
+        smartZ = (enemyGKPos.Z >= 0) and -11.5 or 11.5
+    else
+        smartZ = (math.random() > 0.5 and 11.2 or -11.2)
+    end
+
+    if Config.CrossbarDink then
+        return Vector3.new(targetPos.X, 6.8, targetPos.Z + smartZ)
+    end
+    
+    if Config.GoalLineTease then
+        return Vector3.new(targetPos.X, 2.6, targetPos.Z)
+    end
+
+    if Config.ShotTargetMode == "Top Corners" or Config.ShotTargetMode == "Top Corners (Upper 90)" then
+        targetPos = Vector3.new(targetPos.X, 5.8, targetPos.Z + smartZ)
+    elseif Config.ShotTargetMode == "Bottom Corners" or Config.ShotTargetMode == "Bottom Corners (Low Driven)" then
+        targetPos = Vector3.new(targetPos.X, 3.2, targetPos.Z + smartZ)
+    elseif Config.ShotTargetMode == "Center Net" or Config.ShotTargetMode == "Center Net (Safe Goal)" then
+        targetPos = Vector3.new(targetPos.X, 4.5, targetPos.Z)
+    elseif Config.ShotTargetMode == "Top Left" then
+        targetPos = Vector3.new(targetPos.X, 5.8, targetPos.Z - 11.2)
+    elseif Config.ShotTargetMode == "Top Right" then
+        targetPos = Vector3.new(targetPos.X, 5.8, targetPos.Z + 11.2)
+    elseif Config.ShotTargetMode == "GK Blindspot" then
+        targetPos = Vector3.new(targetPos.X, 4.0, targetPos.Z + smartZ)
+    else
+        targetPos = Vector3.new(targetPos.X, 5.0, targetPos.Z + smartZ)
+    end
+    
+    return targetPos
+end
+
+local function GetMyProtectedGoal()
+    local myTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+    local p1 = Vector3.new(-234.6, 5.0, 0)
+    local p2 = Vector3.new(235.0, 5.0, 0)
+    
+    local map = Workspace:FindFirstChild("Map") or Workspace:FindFirstChild("Field")
+    if map then
+        local g1 = map:FindFirstChild("PlayerOneGoal")
+        local g2 = map:FindFirstChild("PlayerTwoGoal")
+        if g1 then
+            local scorePart = g1:FindFirstChild("ScoreHitbox") or g1:FindFirstChild("AutoGoal")
+            if scorePart then p1 = scorePart.Position end
+        end
+        if g2 then
+            local scorePart = g2:FindFirstChild("ScoreHitbox") or g2:FindFirstChild("AutoGoal")
+            if scorePart then p2 = scorePart.Position end
+        end
+    end
+    
+    if myTeam == "Home" then
+        return p1
+    elseif myTeam == "Away" then
+        return p2
+    else
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            return (hrp.Position - p1).Magnitude < (hrp.Position - p2).Magnitude and p1 or p2
+        end
+    end
+    return p1
+end
+
+-- ==============================================================================
+--                       BALLISTIC TRAJECTORY & HYPER ROCKETS
+-- ==============================================================================
+
+local lastShotTick = 0
+
+local function CalculateBallisticVector(startPos, targetPos, speed)
+    local diff = targetPos - startPos
+    local flatDist = Vector3.new(diff.X, 0, diff.Z).Magnitude
+    local v = math.max(speed or Config.ShotPower, 120)
+    
+    local g = Workspace.Gravity or 196.2
+    local t = flatDist / v
+    local gravityLift = math.clamp(0.42 * g * (t * t), 0, 7.5)
+    
+    local topspinAdjustment = (Config.TopspinDip or 12) * 0.12
+    local elevatedTarget = Vector3.new(targetPos.X, targetPos.Y + gravityLift - topspinAdjustment, targetPos.Z)
+    local dir = (elevatedTarget - startPos).Unit
+    
+    local clampedY = math.clamp(dir.Y, -0.18, 0.08)
+    return Vector3.new(dir.X, clampedY, dir.Z).Unit
+end
+
+local function ExecuteGoalCelebration()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum then
+            hum.Jump = true
+            PlaySound("rbxassetid://6895079853", 1.3)
+        end
+
+        if Events and Events:FindFirstChild("Emote") then
+            local emoteList = {"SUI", "Dance", "Kazotsky Kick", "Floss", "Speed", "LUFFY", "Top Priority"}
+            local targetEmote = Config.SelectedGoalEmote
+            if targetEmote == "Auto (Random)" or not targetEmote then
+                targetEmote = emoteList[math.random(1, #emoteList)]
+            end
+            Events.Emote:FireServer(targetEmote)
+        end
+    end)
+end
+
+local function BoostBallRocket(targetPos, speed)
+    if not Config.SuperRocketShot then return end
+    lastShotTick = tick()
+    task.spawn(function()
+        local targetSpeed = math.clamp(speed or Config.ShotPower, 250, 650)
+        local startTime = tick()
+        local char = LocalPlayer.Character
+        
+        while (tick() - startTime) < 2.2 do
+            pcall(function()
+                local ball = GetBall()
+                if ball and ball:IsA("BasePart") then
+                    if char and ball:IsDescendantOf(char) then return end
+                    
+                    for _, j in ipairs(ball:GetChildren()) do
+                        if j:IsA("JointInstance") or j:IsA("WeldConstraint") then
+                            j:Destroy()
+                        end
+                    end
+                    
+                    if ball.Position.Y < 1.5 then
+                        ball.Position = Vector3.new(ball.Position.X, 2.6, ball.Position.Z)
+                    end
+                    
+                    local dir = (targetPos - ball.Position).Unit
+                    
+                    if Config.AutoCurve then
+                        local curvePower = (Config.CurveIntensity or 25) * 0.006
+                        local curveOffset = math.sin((tick() - startTime) * 11) * curvePower
+                        dir = Vector3.new(dir.X, dir.Y, dir.Z + curveOffset).Unit
+                    end
+
+                    if Config.Knuckleball then
+                        local elapsed = tick() - startTime
+                        local intensity = (Config.KnuckleIntensity or 15) * 0.001
+                        local kZ = math.sin(elapsed * 18) * intensity * 8
+                        local kY = math.cos(elapsed * 14) * intensity * 5
+                        dir = Vector3.new(dir.X, dir.Y + kY, dir.Z + kZ).Unit
+                    end
+
+                    if Config.TopspinDip and Config.TopspinDip > 0 then
+                        local dipProgress = math.clamp((tick() - startTime) / 1.5, 0, 1)
+                        local dipY = - (dipProgress * dipProgress) * (Config.TopspinDip * 0.02)
+                        dir = Vector3.new(dir.X, dir.Y + dipY, dir.Z).Unit
+                    end
+                    
+                    ball.AssemblyLinearVelocity = dir * targetSpeed
+                    
+                    local bv = ball:FindFirstChild("MetavisionRocketBV")
+                    if not bv then
+                        bv = Instance.new("BodyVelocity")
+                        bv.Name = "MetavisionRocketBV"
+                        bv.MaxForce = Vector3.new(1e7, 1e7, 1e7)
+                        bv.Parent = ball
+                    end
+                    bv.Velocity = dir * targetSpeed
+                end
+            end)
+            task.wait(0.015)
+        end
+        
+        pcall(function()
+            local ball = GetBall()
+            if ball and ball:FindFirstChild("MetavisionRocketBV") then
+                ball.MetavisionRocketBV:Destroy()
+            end
+            if Config.TrollEmoteOnGoal then
+                ExecuteGoalCelebration()
+            end
+        end)
+    end)
+end
+
+-- Clean up any existing instances
+pcall(function()
+    if UI_PARENT:FindFirstChild("LunarHub") then UI_PARENT.LunarHub:Destroy() end
+    if UI_PARENT:FindFirstChild("BlueLockMetavisionHub") then UI_PARENT.BlueLockMetavisionHub:Destroy() end
+    if LocalPlayer.PlayerGui:FindFirstChild("LunarHub") then LocalPlayer.PlayerGui.LunarHub:Destroy() end
+    if LocalPlayer.PlayerGui:FindFirstChild("BlueLockMetavisionHub") then LocalPlayer.PlayerGui.BlueLockMetavisionHub:Destroy() end
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "LunarHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 999999
+ScreenGui.IgnoreGuiInset = true
+
+if syn and syn.protect_gui then
+    pcall(syn.protect_gui, ScreenGui)
+end
+
+ScreenGui.Parent = UI_PARENT
+
+local ToastContainer = Instance.new("Frame")
+ToastContainer.Name = "ToastContainer"
+ToastContainer.Size = UDim2.new(0, 320, 1, -40)
+ToastContainer.Position = UDim2.new(1, -335, 0, 20)
+ToastContainer.BackgroundTransparency = 1
+ToastContainer.Parent = ScreenGui
+
+local ToastLayout = Instance.new("UIListLayout")
+ToastLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+ToastLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+ToastLayout.Padding = UDim.new(0, 10)
+ToastLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ToastLayout.Parent = ToastContainer
+
+local activeToasts = {}
+local lastNotiText = ""
+local lastNotiTick = 0
+
+local function Notify(title, desc, duration, icon)
+    duration = duration or 1.4
+    icon = icon or "🌙"
+    
+    local notiKey = tostring(title) .. tostring(desc)
+    local now = tick()
+    if notiKey == lastNotiText and (now - lastNotiTick) < 2.0 then
+        return
+    end
+    lastNotiText = notiKey
+    lastNotiTick = now
+
+    while #activeToasts >= 2 do
+        local old = table.remove(activeToasts, 1)
+        if old and old.Parent then
+            old:Destroy()
+        end
+    end
+    
+    local Toast = Instance.new("Frame")
+    Toast.Size = UDim2.new(1, 0, 0, 46)
+    Toast.BackgroundColor3 = Color3.fromRGB(13, 17, 26)
+    Toast.BackgroundTransparency = 0.12
+    Toast.BorderSizePixel = 0
+    Toast.ClipsDescendants = true
+    Toast.Parent = ToastContainer
+    table.insert(activeToasts, Toast)
+
+    local TCorner = Instance.new("UICorner")
+    TCorner.CornerRadius = UDim.new(0, 8)
+    TCorner.Parent = Toast
+
+    local TStroke = Instance.new("UIStroke")
+    TStroke.Color = Color3.fromRGB(255, 182, 205)
+    TStroke.Thickness = 1.1
+    TStroke.Transparency = 0.35
+    TStroke.Parent = Toast
+
+    local IconLabel = Instance.new("TextLabel")
+    IconLabel.Size = UDim2.new(0, 32, 1, 0)
+    IconLabel.BackgroundTransparency = 1
+    IconLabel.Text = icon
+    IconLabel.TextSize = 16
+    IconLabel.TextColor3 = Color3.fromRGB(255, 182, 205)
+    IconLabel.Font = Enum.Font.GothamBold
+    IconLabel.Parent = Toast
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, -38, 0, 18)
+    TitleLabel.Position = UDim2.new(0, 34, 0, 5)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = title
+    TitleLabel.TextColor3 = Color3.fromRGB(240, 248, 255)
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 11
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = Toast
+
+    local DescLabel = Instance.new("TextLabel")
+    DescLabel.Size = UDim2.new(1, -38, 0, 18)
+    DescLabel.Position = UDim2.new(0, 34, 0, 23)
+    DescLabel.BackgroundTransparency = 1
+    DescLabel.Text = desc
+    DescLabel.TextColor3 = Color3.fromRGB(170, 185, 210)
+    DescLabel.Font = Enum.Font.GothamMedium
+    DescLabel.TextSize = 10
+    DescLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DescLabel.TextWrapped = true
+    DescLabel.Parent = Toast
+
+    Toast.Position = UDim2.new(1, 80, 0, 0)
+    TweenService:Create(Toast, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+
+    task.delay(duration, function()
+        if Toast and Toast.Parent then
+            local tw = TweenService:Create(Toast, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 50, 0, 0), BackgroundTransparency = 1})
+            tw:Play()
+            tw.Completed:Connect(function()
+                local idx = table.find(activeToasts, Toast)
+                if idx then table.remove(activeToasts, idx) end
+                Toast:Destroy()
+            end)
+        end
+    end)
+end
+
+local lastNoBallNoticeTick = 0
+local function FireSuperShot()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    if not hrp then return end
+    
+    local ball = GetBall()
+    local distToBall = ball and (ball.Position - hrp.Position).Magnitude or 999
+    local hasBall = char:GetAttribute("HasBall") == true or (ball and ball.Parent == char) or distToBall <= 7.5
+    
+    if hasBall then
+        local goalPos = GetEnemyGoal()
+        local speed = math.clamp(Config.MaxShotPower and Config.ShotPower or 280, 180, 500)
+        local shootDir = CalculateBallisticVector(hrp.Position, goalPos, speed)
+        
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        pcall(function()
+            if hum and hum:FindFirstChild("Animator") and ReplicatedStorage:FindFirstChild("Anims") and ReplicatedStorage.Anims:FindFirstChild("ShotEnd") then
+                hum.Animator:LoadAnimation(ReplicatedStorage.Anims.ShotEnd):Play()
+            end
+        end)
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(shootDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(shootDir, 100) end)
+        end
+        if Events and Events:FindFirstChild("CurvedShot") then
+            pcall(function() Events.CurvedShot:FireServer(shootDir, 100) end)
+        end
+        
+        pcall(function()
+            if ball then
+                for _, child in ipairs(ball:GetChildren()) do
+                    if child:IsA("JointInstance") or child:IsA("WeldConstraint") then
+                        child:Destroy()
+                    end
+                end
+            end
+        end)
+
+        BoostBallRocket(goalPos, speed)
+    else
+        local now = tick()
+        if (now - lastNoBallNoticeTick) > 2.5 then
+            lastNoBallNoticeTick = now
+            Notify("Notice", "Get closer to the ball to shoot!", 1.2, "⚠️")
+        end
+    end
+end
+
+local function TeleportToBall()
+    pcall(function()
+        local ball = GetBall()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if ball and hrp then
+            hrp.CFrame = ball.CFrame + Vector3.new(0, 3.2, 0)
+        end
+    end)
+end
+
+local function TeleportToGoal()
+    pcall(function()
+        local goalPos = GetEnemyGoal()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(goalPos)
+        end
+    end)
+end
+
+local lastDashTick = 0
+local function ExecuteDashBurst()
+    local now = tick()
+    if (now - lastDashTick) < 0.28 then return end
+    lastDashTick = now
+
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hrp and hum then
+            local moveDir = hum.MoveDirection
+            if moveDir.Magnitude == 0 then moveDir = hrp.CFrame.LookVector end
+            
+            if hrp:FindFirstChild("LunarDashBV") then hrp.LunarDashBV:Destroy() end
+            
+            local bv = Instance.new("BodyVelocity")
+            bv.Name = "LunarDashBV"
+            bv.MaxForce = Vector3.new(1e6, 0, 1e6)
+            bv.Velocity = moveDir.Unit * 95
+            bv.Parent = hrp
+            
+            task.delay(0.24, function()
+                if bv and bv.Parent then bv:Destroy() end
+            end)
+            
+            if Events and Events:FindFirstChild("SlideBegan") then Events.SlideBegan:FireServer() end
+            PlaySound("rbxassetid://6895079853", 1.25)
+        end
+    end)
+end
+
+local function GetBestTeammatePassTarget()
+    local myChar = LocalPlayer.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return nil end
+    
+    local enemyGoal = GetEnemyGoal()
+    local bestTarget = nil
+    local bestScore = -99999
+    
+    local allPlayers = Players:GetPlayers()
+    for _, plr in ipairs(allPlayers) do
+        if plr ~= LocalPlayer and IsTeammate(plr) and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local tChar = plr.Character
+            local tHrp = tChar.HumanoidRootPart
+            local hum = tChar:FindFirstChild("Humanoid")
+            
+            -- Only consider conscious / active teammates
+            local isKnocked = tChar:GetAttribute("Ragdoll") == true or tChar:GetAttribute("Sliding") == true or (hum and hum.Health <= 0)
+            if not isKnocked then
+                local distToMe = (tHrp.Position - myHrp.Position).Magnitude
+                if distToMe >= 8 and distToMe <= 220 then
+                    local distToGoal = (tHrp.Position - enemyGoal).Magnitude
+                    local forwardScore = 320 - distToGoal
+                    
+                    -- Dynamic leading calculation
+                    local moveDir = hum and hum.MoveDirection or Vector3.zero
+                    local tVel = tHrp.AssemblyLinearVelocity
+                    local horizontalSpeed = Vector3.new(tVel.X, 0, tVel.Z).Magnitude
+                    local leadMultiplier = Config.PassLeadingMultiplier or 1.4
+                    local leadDist = math.clamp(horizontalSpeed * 0.32 * leadMultiplier, 0, 20)
+                    local forwardToGoal = (enemyGoal - tHrp.Position).Unit
+                    
+                    local leadOffset = (moveDir.Magnitude > 0.1) 
+                        and (moveDir.Unit * leadDist) 
+                        or (forwardToGoal * 4.0)
+                    
+                    if Config.PassMode == "Direct To Feet" then
+                        leadOffset = Vector3.zero
+                    end
+                    
+                    local leadPos = tHrp.Position + leadOffset + Vector3.new(0, 0.4, 0)
+                    
+                    -- Interception analysis along the pass trajectory line
+                    local pA = myHrp.Position
+                    local pB = leadPos
+                    local seg = (pB - pA)
+                    local segLen = seg.Magnitude
+                    local minEnemyDistToLane = 999
+                    local markedEnemyCount = 0
+                    
+                    for _, enemy in ipairs(allPlayers) do
+                        if enemy ~= plr and IsEnemy(enemy) and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
+                            local ePos = enemy.Character.HumanoidRootPart.Position
+                            
+                            -- Check lane collision
+                            local tProj = math.clamp((ePos - pA):Dot(seg) / (segLen * segLen), 0, 1)
+                            local closestPoint = pA + (seg * tProj)
+                            local distToLane = (ePos - closestPoint).Magnitude
+                            if distToLane < minEnemyDistToLane then
+                                minEnemyDistToLane = distToLane
+                            end
+                            
+                            -- Check tight marking at receiving point
+                            if (ePos - leadPos).Magnitude < 11 then
+                                markedEnemyCount = markedEnemyCount + 1
+                            end
+                        end
+                    end
+                    
+                    -- Score calculation: Higher score for forward open space & safe lanes
+                    local laneSafetyBonus = (minEnemyDistToLane >= 14) and 60 or (minEnemyDistToLane < 7.5 and -120 or (minEnemyDistToLane * 3.5))
+                    local markingPenalty = markedEnemyCount * 55
+                    local distancePenalty = math.abs(distToMe - 45) * 0.35
+                    
+                    local totalScore = forwardScore + laneSafetyBonus - markingPenalty - distancePenalty
+                    
+                    if totalScore > bestScore then
+                        bestScore = totalScore
+                        bestTarget = {
+                            Player = plr,
+                            Character = tChar,
+                            Hrp = tHrp,
+                            LeadPosition = leadPos,
+                            LaneSafety = minEnemyDistToLane,
+                            Score = totalScore,
+                            Distance = distToMe
+                        }
+                    end
+                end
+            end
+        end
+    end
+    
+    return bestTarget
+end
+
+local function ExecuteAutoPass()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local distToBall = (ball.Position - hrp.Position).Magnitude
+        local hasBall = char:GetAttribute("HasBall") == true or distToBall <= 7.5
+        if not hasBall then
+            Notify("Notice", "You need possession of the ball to pass!", 1.2, "⚠️")
+            return
+        end
+        
+        local target = GetBestTeammatePassTarget()
+        if target and target.LeadPosition then
+            local leadPos = target.LeadPosition
+            local passPower = Config.PassPower or 85
+            local passMode = Config.PassMode or "Smart Through Ball"
+            
+            local yBoost = 0.4
+            if passMode == "Lofted Lob" or target.LaneSafety < 8.5 then
+                yBoost = math.clamp(target.Distance * 0.14, 2.5, 9.0)
+            end
+            
+            local passTargetFinal = leadPos + Vector3.new(0, yBoost, 0)
+            local passDir = (passTargetFinal - hrp.Position).Unit
+            
+            lastShotTick = tick()
+            if Events and Events:FindFirstChild("ShootBall") then
+                Events.ShootBall:FireServer(passDir, passPower)
+            end
+            
+            -- Intelligent Physics Assist & Guidance
+            task.spawn(function()
+                local startTime = tick()
+                local flyDuration = math.clamp(target.Distance / 80, 0.45, 1.4)
+                while (tick() - startTime) < flyDuration do
+                    pcall(function()
+                        local b = GetBall()
+                        if b and b:IsA("BasePart") then
+                            local currentTarget = target.Hrp and (target.Hrp.Position + Vector3.new(0, 0.4, 0)) or leadPos
+                            local d = (currentTarget - b.Position)
+                            if d.Magnitude <= 3.2 then
+                                b.AssemblyLinearVelocity = Vector3.zero
+                                return
+                            end
+                            local pushSpeed = math.clamp(passPower * 1.15, 75, 125)
+                            b.AssemblyLinearVelocity = d.Unit * pushSpeed
+                        end
+                    end)
+                    task.wait(0.015)
+                end
+            end)
+            
+            local targetName = target.Player.DisplayName or target.Player.Name
+            local distText = tostring(math.floor(target.Distance)) .. "m"
+            Notify("🎯 Metavision Pass", "Through-pass delivered to " .. targetName .. " (" .. distText .. ")!", 1.6, "🎯")
+            PlaySound("rbxassetid://6895079853", 1.35)
+        else
+            Notify("Notice", "No open teammates in clear passing lane!", 1.3, "⚠️")
+        end
+    end)
+end
+
+local function ExecuteFakeShotFeint()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        local ball = GetBall()
+        if not hrp or not hum then return end
+        
+        local distToBall = ball and (ball.Position - hrp.Position).Magnitude or 999
+        local hasBall = char:GetAttribute("HasBall") == true or distToBall <= 7.5
+        if not hasBall then
+            Notify("Human Trolling", "You need the ball to fake shot!", 1.2, "🤡")
+            return
+        end
+
+        pcall(function()
+            if hum and hum:FindFirstChild("Animator") and ReplicatedStorage:FindFirstChild("Anims") and ReplicatedStorage.Anims:FindFirstChild("ShotEnd") then
+                local track = hum.Animator:LoadAnimation(ReplicatedStorage.Anims.ShotEnd)
+                track:Play()
+                task.delay(0.18, function()
+                    track:Stop(0.1)
+                end)
+            end
+        end)
+
+        if ball and ball:IsA("BasePart") then
+            ball.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end
+
+        task.delay(0.24, function()
+            if Events and Events:FindFirstChild("Dribble") then
+                Events.Dribble:InvokeServer()
+            end
+            ExecuteDashBurst()
+        end)
+        
+        Notify("🤡 Fake Shot", "Feint executed! Baited slides!", 1.5, "🤡")
+    end)
+end
+
+local function JoinTeam(teamName, roleName)
+    pcall(function()
+        local joinRemote = ReplicatedStorage:FindFirstChild("Events") 
+            and ReplicatedStorage.Events:FindFirstChild("Game") 
+            and ReplicatedStorage.Events.Game:FindFirstChild("JoinGame")
+        if joinRemote then
+            joinRemote:FireServer(teamName, roleName)
+        end
+    end)
+end
+
+local function ExecuteAutoJoinTeam(notify)
+    pcall(function()
+        local currentTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+        if currentTeam == "Home" or currentTeam == "Away" then
+            if notify then
+                Notify("Team Join", "You are already on team " .. currentTeam .. "!", 1.5, "👥")
+            end
+            return
+        end
+
+        local preferredRole = Config.TargetRole == "Any Open Role" and "CF" or Config.TargetRole
+        local allRoles = {"CF", "LW", "RW", "CM", "GK"}
+        
+        if Config.TargetTeam == "Home" then
+            JoinTeam("Home", preferredRole)
+            for _, r in ipairs(allRoles) do JoinTeam("Home", r) end
+            if notify then Notify("Team Join", "Attempting to join Home team (" .. preferredRole .. ")...", 1.5, "👥") end
+        elseif Config.TargetTeam == "Away" then
+            JoinTeam("Away", preferredRole)
+            for _, r in ipairs(allRoles) do JoinTeam("Away", r) end
+            if notify then Notify("Team Join", "Attempting to join Away team (" .. preferredRole .. ")...", 1.5, "👥") end
+        else
+            JoinTeam("Home", preferredRole)
+            JoinTeam("Away", preferredRole)
+            for _, r in ipairs(allRoles) do
+                JoinTeam("Home", r)
+                JoinTeam("Away", r)
+            end
+            if notify then Notify("Team Join", "Attempting to join any open team...", 1.5, "👥") end
+        end
+    end)
+end
+
+local PROMO_CODES = {
+    "SKIBIDI", "BLUELOCK", "UPDATE", "RELEASE", "GOAL", "CHRISTMAS", "NEWYEAR",
+    "10KLIKES", "20KLIKES", "50KLIKES", "100KLIKES", "EGOIST", "RIN", "SAE",
+    "KAISER", "SHIDOU", "NAGI", "ISAGI", "THANKYOU", "METAVISION", "GODGK",
+    "LUNAR", "COLUMBINA", "FREEFIRE", "THEBEST"
+}
+
+local function RedeemAllPromoCodes()
+    task.spawn(function()
+        local count = 0
+        local useCodeRemote = Events and Events:FindFirstChild("Data") and Events.Data:FindFirstChild("UseCode")
+        if not useCodeRemote then
+            Notify("Code Redeemer", "Code remote not found!", 2, "⚠️")
+            return
+        end
+
+        Notify("Code Redeemer", "Redeeming all active codes...", 2.5, "🎁")
+        for _, code in ipairs(PROMO_CODES) do
+            pcall(function()
+                useCodeRemote:FireServer(code)
+                count = count + 1
+            end)
+            task.wait(0.18)
+        end
+        Notify("Code Redeemer", "Completed! Redeemed " .. count .. " codes!", 2.5, "🎉")
+    end)
+end
+
+-- Auto-Gacha Roller Loop (Ultra-Fast)
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(Config.RollDelay or 0.05)
+        if Config.AutoRollCharacter then
+            pcall(function()
+                local rollRemote = Events and Events:FindFirstChild("Data") and Events.Data:FindFirstChild("RollCharacter")
+                local getRemote = Events and Events:FindFirstChild("Data") and Events.Data:FindFirstChild("GetData")
+                if rollRemote then
+                    rollRemote:FireServer()
+                    
+                    if getRemote then
+                        local data = getRemote:InvokeServer()
+                        if data and data.SelectedCharacter then
+                            local cur = data.SelectedCharacter
+                            local target = Config.TargetRollCharacter
+                            local isMatch = false
+                            
+                            local secretSet = {
+                                ["Ronaldo"] = true,
+                                ["Devil Fruit User"] = true,
+                                ["DevilFruitUser"] = true,
+                                ["Stand User"] = true,
+                                ["Ichigo"] = true
+                            }
+                            local mythicSet = {
+                                ["Sae"] = true,
+                                ["Nagi"] = true,
+                                ["Aiku"] = true,
+                                ["Barou"] = true,
+                                ["Yukimiya"] = true
+                            }
+                            local wcSet = {
+                                ["Kaiser"] = true,
+                                ["DonLorenzo"] = true,
+                                ["Rin"] = true,
+                                ["Shidou"] = true
+                            }
+                            
+                            if target == "Any Secret / Mythic" then
+                                if secretSet[cur] or mythicSet[cur] or wcSet[cur] then isMatch = true end
+                            elseif target == "Any Secret" then
+                                if secretSet[cur] then isMatch = true end
+                            elseif cur == target then
+                                isMatch = true
+                            end
+                            
+                            if isMatch then
+                                Config.AutoRollCharacter = false
+                                Notify("🎉 GACHA WINNER", "Rolled Target: " .. tostring(cur) .. "!", 6, "✨")
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+
+        if Config.AutoRollMVP then
+            pcall(function()
+                local rollMVP = Events and Events:FindFirstChild("Data") and Events.Data:FindFirstChild("RollMVP")
+                if rollMVP then rollMVP:FireServer() end
+            end)
+        end
+
+        if Config.AutoRollEmote then
+            pcall(function()
+                local rollEmote = Events and Events:FindFirstChild("Data") and Events.Data:FindFirstChild("RollEmote")
+                if rollEmote then rollEmote:FireServer() end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    task.wait(3.0)
+    if Config.AutoRedeemCodes then
+        RedeemAllPromoCodes()
+    end
+end)
+
+-- Autonomous 100% Precision Goal Auto-Farm Engine
+local lastFarmShotTick = 0
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(0.04)
+        if Config.GoalAutoFarm then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChild("Humanoid")
+                if not hrp or not hum or hum.Health <= 0 then return end
+                
+                -- Anti-Stun & Anti-Ragdoll guard during farm
+                char:SetAttribute("Ragdoll", false)
+                char:SetAttribute("Stunned", false)
+                char:SetAttribute("CantBall", false)
+
+                -- Verify Match Team
+                local currentTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+                if not currentTeam or currentTeam == "Lobby" or currentTeam == "None" then
+                    ExecuteAutoJoinTeam(false)
+                    task.wait(0.5)
+                    return
+                end
+
+                local ball = GetBall()
+                if not ball or not ball:IsA("BasePart") then return end
+                
+                local distToBall = (ball.Position - hrp.Position).Magnitude
+                local hasBall = char:GetAttribute("HasBall") == true or ball.Parent == char or distToBall <= 7.0
+                local now = tick()
+                local enemyGoal = GetEnemyGoal()
+
+                if not hasBall then
+                    if (now - lastFarmShotTick) > (Config.AutoFarmDelay or 0.5) then
+                        -- Teleport directly onto the ball
+                        hrp.CFrame = CFrame.new(ball.Position.X, ball.Position.Y + 2.0, ball.Position.Z)
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        
+                        task.spawn(function()
+                            if Events and Events:FindFirstChild("SlideBegan") then
+                                Events.SlideBegan:FireServer()
+                            end
+                            for _, plr in ipairs(Players:GetPlayers()) do
+                                if plr ~= LocalPlayer and plr.Character and plr.Character:GetAttribute("HasBall") == true then
+                                    if Events and Events:FindFirstChild("StealBallSlide") then
+                                        Events.StealBallSlide:InvokeServer(plr.Character)
+                                    end
+                                end
+                            end
+                        end)
+                        
+                        if ball.Parent == Workspace then
+                            ball.AssemblyLinearVelocity = (hrp.Position - ball.Position).Unit * 80
+                        end
+                    end
+                else
+                    if (now - lastFarmShotTick) > (Config.AutoFarmDelay or 0.5) then
+                        lastFarmShotTick = now
+                        
+                        -- Point-blank execution in front of enemy net
+                        local isHome = (enemyGoal.X < 0)
+                        local pointBlankX = isHome and -218.0 or 218.0
+                        local shootSpot = Vector3.new(pointBlankX, 4.5, enemyGoal.Z)
+                        
+                        hrp.CFrame = CFrame.lookAt(shootSpot, enemyGoal)
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        
+                        task.wait(0.04)
+                        
+                        FireSuperShot()
+                        BoostBallRocket(enemyGoal, 480)
+                        
+                        task.wait(0.22)
+                        if hrp then
+                            hrp.CFrame = CFrame.new(0, 10, 0)
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- ==============================================================================
+--                               MAIN GUI CREATION
+-- ==============================================================================
+local function GetResponsiveFrameSize()
+    local vp = Camera.ViewportSize
+    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+    if isMobile or vp.X < 900 or vp.Y < 600 then
+        local w = math.clamp(vp.X * 0.88, 460, 680)
+        local h = math.clamp(vp.Y * 0.84, 280, 440)
+        return UDim2.new(0, w, 0, h), UDim2.new(0.5, -w/2, 0.5, -h/2)
+    else
+        return UDim2.new(0, 760, 0, 490), UDim2.new(0.5, -380, 0.5, -245)
+    end
+end
+
+local defaultSize, defaultPos = GetResponsiveFrameSize()
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = defaultSize
+MainFrame.Position = defaultPos
+MainFrame.BackgroundColor3 = Color3.fromRGB(11, 15, 23)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Visible = true
+MainFrame.Parent = ScreenGui
+
+local isMinimized = false
+
+Camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+    if not isMinimized and MainFrame.Visible then
+        local sz, pos = GetResponsiveFrameSize()
+        MainFrame.Size = sz
+        MainFrame.Position = pos
+    end
+end)
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(255, 182, 205)
+MainStroke.Thickness = 1.8
+MainStroke.Transparency = 0.2
+MainStroke.Parent = MainFrame
+
+local GlowLine = Instance.new("Frame")
+GlowLine.Size = UDim2.new(1, 0, 0, 2)
+GlowLine.Position = UDim2.new(0, 0, 0, 0)
+GlowLine.BackgroundColor3 = Color3.fromRGB(255, 182, 205)
+GlowLine.BorderSizePixel = 0
+GlowLine.Parent = MainFrame
+
+local GlowGradient = Instance.new("UIGradient")
+GlowGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(130, 215, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 182, 205)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 245, 255))
+})
+GlowGradient.Parent = GlowLine
+
+-- TopBar
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 56)
+TopBar.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarFix = Instance.new("Frame")
+TopBarFix.Size = UDim2.new(1, 0, 0, 14)
+TopBarFix.Position = UDim2.new(0, 0, 1, -14)
+TopBarFix.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+TopBarFix.BorderSizePixel = 0
+TopBarFix.Parent = TopBar
+
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local LogoContainer = Instance.new("Frame")
+LogoContainer.Size = UDim2.new(0, 36, 0, 36)
+LogoContainer.Position = UDim2.new(0, 18, 0.5, -18)
+LogoContainer.BackgroundColor3 = Color3.fromRGB(24, 30, 48)
+LogoContainer.BorderSizePixel = 0
+LogoContainer.Parent = TopBar
+
+local LogoCorner = Instance.new("UICorner")
+LogoCorner.CornerRadius = UDim.new(1, 0)
+LogoCorner.Parent = LogoContainer
+
+local LogoStroke = Instance.new("UIStroke")
+LogoStroke.Color = Color3.fromRGB(255, 182, 205)
+LogoStroke.Thickness = 1.4
+LogoStroke.Parent = LogoContainer
+
+local LogoImg = Instance.new("ImageLabel")
+LogoImg.Size = UDim2.new(1, 0, 1, 0)
+LogoImg.BackgroundTransparency = 1
+LogoImg.Image = "rbxassetid://71437797590650"
+LogoImg.Parent = LogoContainer
+
+local LogoImgCorner = Instance.new("UICorner")
+LogoImgCorner.CornerRadius = UDim.new(1, 0)
+LogoImgCorner.Parent = LogoImg
+
+local LogoIcon = Instance.new("TextLabel")
+LogoIcon.Size = UDim2.new(1, 0, 1, 0)
+LogoIcon.BackgroundTransparency = 1
+LogoIcon.Text = "🕊️"
+LogoIcon.TextSize = 20
+LogoIcon.ZIndex = 5
+LogoIcon.Parent = LogoContainer
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 340, 1, 0)
+Title.Position = UDim2.new(0, 62, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🌙 LUNAR <font color='#ff9ec6'><b>HUB</b></font> <font color='#78d5ff'><font size='11'>COLUMBINA v7.0 SUPREME</font></font>"
+Title.RichText = true
+Title.TextColor3 = Color3.fromRGB(255, 245, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local StatsBadge = Instance.new("Frame")
+StatsBadge.Size = UDim2.new(0, 220, 0, 32)
+StatsBadge.Position = UDim2.new(1, -320, 0.5, -16)
+StatsBadge.BackgroundColor3 = Color3.fromRGB(22, 29, 45)
+StatsBadge.BorderSizePixel = 0
+StatsBadge.Parent = TopBar
+
+local StatsBadgeCorner = Instance.new("UICorner")
+StatsBadgeCorner.CornerRadius = UDim.new(0, 8)
+StatsBadgeCorner.Parent = StatsBadge
+
+local StatsDot = Instance.new("Frame")
+StatsDot.Size = UDim2.new(0, 8, 0, 8)
+StatsDot.Position = UDim2.new(0, 10, 0.5, -4)
+StatsDot.BackgroundColor3 = Color3.fromRGB(0, 245, 160)
+StatsDot.BorderSizePixel = 0
+StatsDot.Parent = StatsBadge
+
+local DotCorner = Instance.new("UICorner")
+DotCorner.CornerRadius = UDim.new(1, 0)
+DotCorner.Parent = StatsDot
+
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Size = UDim2.new(1, -26, 1, 0)
+StatsLabel.Position = UDim2.new(0, 24, 0, 0)
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.Text = "FPS: 60 | Ping: 30ms | Role: --"
+StatsLabel.TextColor3 = Color3.fromRGB(0, 220, 255)
+StatsLabel.Font = Enum.Font.GothamMedium
+StatsLabel.TextSize = 11
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatsLabel.Parent = StatsBadge
+
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(0.5)
+        pcall(function()
+            local fps = math.floor(Workspace:GetRealPhysicsFPS())
+            local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+            local role = LocalPlayer:FindFirstChild("Role") and tostring(LocalPlayer.Role.Value) or "CF"
+            local team = LocalPlayer.Team and LocalPlayer.Team.Name or "None"
+            StatsLabel.Text = string.format("FPS: %d | Ping: %dms | %s [%s]", fps, ping, role, team)
+            if fps < 30 or ping > 150 then
+                StatsDot.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+            else
+                StatsDot.BackgroundColor3 = Color3.fromRGB(0, 245, 160)
+            end
+        end)
+    end
+end)
+
+local MobileBtn = Instance.new("TextButton")
+MobileBtn.Size = UDim2.new(0, 72, 0, 32)
+MobileBtn.Position = UDim2.new(1, -160, 0.5, -16)
+MobileBtn.BackgroundColor3 = Color3.fromRGB(28, 36, 54)
+MobileBtn.Text = "📱 Mobile"
+MobileBtn.TextColor3 = Color3.fromRGB(0, 220, 255)
+MobileBtn.Font = Enum.Font.GothamBold
+MobileBtn.TextSize = 11
+MobileBtn.Parent = TopBar
+
+local MobileBtnCorner = Instance.new("UICorner")
+MobileBtnCorner.CornerRadius = UDim.new(0, 8)
+MobileBtnCorner.Parent = MobileBtn
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 32, 0, 32)
+MinBtn.Position = UDim2.new(1, -82, 0.5, -16)
+MinBtn.BackgroundColor3 = Color3.fromRGB(28, 36, 54)
+MinBtn.Text = "—"
+MinBtn.TextColor3 = Color3.fromRGB(200, 215, 235)
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 14
+MinBtn.Parent = TopBar
+
+local MinBtnCorner = Instance.new("UICorner")
+MinBtnCorner.CornerRadius = UDim.new(0, 8)
+MinBtnCorner.Parent = MinBtn
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseBtn.Position = UDim2.new(1, -44, 0.5, -16)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(28, 36, 54)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 95, 95)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+CloseBtn.Parent = TopBar
+
+local CloseBtnCorner = Instance.new("UICorner")
+CloseBtnCorner.CornerRadius = UDim.new(0, 8)
+CloseBtnCorner.Parent = CloseBtn
+
+-- ==============================================================================
+--                       MOBILE QUICK-ACTION TOUCH PAD
+-- ==============================================================================
+local MobilePadFrame = Instance.new("Frame")
+MobilePadFrame.Name = "MobilePadFrame"
+MobilePadFrame.Size = UDim2.new(0, 62, 0, 375)
+MobilePadFrame.Position = UDim2.new(1, -74, 0.5, -188)
+MobilePadFrame.BackgroundColor3 = Color3.fromRGB(12, 16, 25)
+MobilePadFrame.BackgroundTransparency = 0.16
+MobilePadFrame.BorderSizePixel = 0
+MobilePadFrame.Visible = Config.MobileMode
+MobilePadFrame.ZIndex = 60
+MobilePadFrame.Parent = ScreenGui
+
+local PadCorner = Instance.new("UICorner")
+PadCorner.CornerRadius = UDim.new(0, 12)
+PadCorner.Parent = MobilePadFrame
+
+local PadStroke = Instance.new("UIStroke")
+PadStroke.Color = Color3.fromRGB(255, 182, 205)
+PadStroke.Thickness = 1.4
+PadStroke.Transparency = 0.35
+PadStroke.Parent = MobilePadFrame
+
+local PadHeader = Instance.new("TextLabel")
+PadHeader.Size = UDim2.new(1, 0, 0, 22)
+PadHeader.BackgroundTransparency = 1
+PadHeader.Text = "🌙 LUNAR"
+PadHeader.TextColor3 = Color3.fromRGB(255, 182, 205)
+PadHeader.Font = Enum.Font.GothamBold
+PadHeader.TextSize = 10
+PadHeader.ZIndex = 61
+PadHeader.Parent = MobilePadFrame
+
+local PadList = Instance.new("UIListLayout")
+PadList.Padding = UDim.new(0, 3)
+PadList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+PadList.SortOrder = Enum.SortOrder.LayoutOrder
+PadList.Parent = MobilePadFrame
+
+local PadPadding = Instance.new("UIPadding")
+PadPadding.PaddingTop = UDim.new(0, 22)
+PadPadding.PaddingBottom = UDim.new(0, 4)
+PadPadding.Parent = MobilePadFrame
+
+local padDragging, padDragInput, padDragStart, padStartPos
+MobilePadFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        padDragging = true
+        padDragStart = input.Position
+        padStartPos = MobilePadFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                padDragging = false
+            end
+        end)
+    end
+end)
+
+MobilePadFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        padDragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == padDragInput and padDragging then
+        local delta = input.Position - padDragStart
+        MobilePadFrame.Position = UDim2.new(padStartPos.X.Scale, padStartPos.X.Offset + delta.X, padStartPos.Y.Scale, padStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+local function CreateMobileActionBtn(icon, label, color, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 52, 0, 28)
+    btn.BackgroundColor3 = Color3.fromRGB(19, 26, 38)
+    btn.BorderSizePixel = 0
+    btn.Text = ""
+    btn.ZIndex = 65
+    btn.Active = true
+    btn.Parent = MobilePadFrame
+
+    local bCorner = Instance.new("UICorner")
+    bCorner.CornerRadius = UDim.new(0, 7)
+    bCorner.Parent = btn
+
+    local bStroke = Instance.new("UIStroke")
+    bStroke.Color = color or Color3.fromRGB(0, 210, 255)
+    bStroke.Thickness = 1
+    bStroke.Transparency = 0.5
+    bStroke.Parent = btn
+
+    local iconLbl = Instance.new("TextLabel")
+    iconLbl.Size = UDim2.new(1, 0, 0, 15)
+    iconLbl.Position = UDim2.new(0, 0, 0, 1)
+    iconLbl.BackgroundTransparency = 1
+    iconLbl.Text = icon
+    iconLbl.TextSize = 12
+    iconLbl.ZIndex = 66
+    iconLbl.Parent = btn
+
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Size = UDim2.new(1, 0, 0, 10)
+    nameLbl.Position = UDim2.new(0, 0, 0, 16)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = label
+    nameLbl.TextColor3 = color or Color3.fromRGB(210, 230, 255)
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.TextSize = 8
+    nameLbl.ZIndex = 66
+    nameLbl.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        PlaySound(nil, 1.2)
+        TweenService:Create(btn, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(35, 48, 72)}):Play()
+        task.delay(0.12, function()
+            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(19, 26, 38)}):Play()
+        end)
+        pcall(callback)
+    end)
+    return btn
+end
+
+CreateMobileActionBtn("⚽", "GOAL", Color3.fromRGB(0, 255, 170), function()
+    FireSuperShot()
+end)
+
+CreateMobileActionBtn("🎯", "PASS", Color3.fromRGB(0, 255, 220), function()
+    ExecuteAutoPass()
+end)
+
+CreateMobileActionBtn("🤡", "FEINT", Color3.fromRGB(255, 170, 0), function()
+    ExecuteFakeShotFeint()
+end)
+
+CreateMobileActionBtn("⚡", "TP BALL", Color3.fromRGB(0, 220, 255), function()
+    TeleportToBall()
+end)
+
+CreateMobileActionBtn("🧲", "PULL", Color3.fromRGB(255, 180, 50), function()
+    pcall(function()
+        local ball = GetBall()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if ball and hrp then
+            local targetPos = hrp.Position + (hrp.CFrame.LookVector * 2.5)
+            ball.AssemblyLinearVelocity = (targetPos - ball.Position).Unit * 120
+            if Events and Events:FindFirstChild("SlideBegan") then Events.SlideBegan:FireServer() end
+            Notify("🧲 Pull Ball", "Ball pulled to boots!", 1.2)
+        end
+    end)
+end)
+
+CreateMobileActionBtn("🥅", "TP GOAL", Color3.fromRGB(0, 200, 255), function()
+    TeleportToGoal()
+end)
+
+CreateMobileActionBtn("🧤", "GK DIVE", Color3.fromRGB(255, 110, 150), function()
+    pcall(function()
+        local ball = GetBall()
+        local myChar = LocalPlayer.Character
+        local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if ball and myHrp then
+            local relVec = myHrp.CFrame:PointToObjectSpace(ball.Position)
+            local dir = "Forward"
+            if relVec.X < -2.5 then dir = "Left" elseif relVec.X > 2.5 then dir = "Right" end
+            if Events and Events:FindFirstChild("GKDive") then
+                Events.GKDive:FireServer(dir)
+                Notify("🧤 GK Save", "Dived " .. dir .. "!", 1.2)
+            end
+        end
+    end)
+end)
+
+CreateMobileActionBtn("💨", "DASH", Color3.fromRGB(0, 240, 255), function()
+    ExecuteDashBurst()
+end)
+
+CreateMobileActionBtn("⚡", "TACKLE", Color3.fromRGB(255, 80, 80), function()
+    pcall(function()
+        if Events and Events:FindFirstChild("SlideBegan") then Events.SlideBegan:FireServer() end
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and IsEnemy(plr) and plr.Character and plr.Character:GetAttribute("HasBall") == true then
+                if Events and Events:FindFirstChild("StealBallSlide") then Events.StealBallSlide:InvokeServer(plr.Character) end
+            end
+        end
+    end)
+end)
+
+CreateMobileActionBtn("🏃", "SPEED", Color3.fromRGB(255, 220, 0), function()
+    Config.SpeedBoost = not Config.SpeedBoost
+    Notify("Speed Boost", Config.SpeedBoost and ("ON (" .. Config.WalkSpeed .. " WS)") or "OFF", 1.2)
+end)
+
+CreateMobileActionBtn("🪄", "DRIBBLE", Color3.fromRGB(180, 100, 255), function()
+    pcall(function()
+        if Events and Events:FindFirstChild("Dribble") then
+            Events.Dribble:InvokeServer()
+        end
+    end)
+end)
+
+CreateMobileActionBtn("👁️", "MENU", Color3.fromRGB(0, 240, 255), function()
+    ToggleGUI()
+end)
+
+MobileBtn.MouseButton1Click:Connect(function()
+    Config.MobileMode = not Config.MobileMode
+    MobilePadFrame.Visible = Config.MobileMode
+    PlaySound(nil, 1.1)
+    Notify("Mobile Mode", Config.MobileMode and "Touch Quick Pad enabled!" or "Touch Quick Pad hidden.", 2, "📱")
+end)
+
+-- Floating Toggle Widget (Always-Visible Glowing Columbina Orb)
+local ToggleWidget = Instance.new("ImageButton")
+ToggleWidget.Name = "ColumbinaToggleOrb"
+ToggleWidget.Size = UDim2.new(0, 52, 0, 52)
+ToggleWidget.Position = UDim2.new(0, 18, 0.46, 0)
+ToggleWidget.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+ToggleWidget.BackgroundTransparency = 0.08
+ToggleWidget.BorderSizePixel = 0
+ToggleWidget.ZIndex = 1000
+ToggleWidget.Active = true
+ToggleWidget.Visible = true
+ToggleWidget.Parent = ScreenGui
+
+local OrbCorner = Instance.new("UICorner")
+OrbCorner.CornerRadius = UDim.new(1, 0)
+OrbCorner.Parent = ToggleWidget
+
+local OrbStroke = Instance.new("UIStroke")
+OrbStroke.Color = Color3.fromRGB(255, 182, 205)
+OrbStroke.Thickness = 2.2
+OrbStroke.Parent = ToggleWidget
+
+local OrbGlow = Instance.new("UIGradient")
+OrbGlow.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(130, 215, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 182, 205)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 245, 255))
+})
+OrbGlow.Parent = OrbStroke
+
+local OrbIcon = Instance.new("TextLabel")
+OrbIcon.Size = UDim2.new(1, 0, 1, 0)
+OrbIcon.BackgroundTransparency = 1
+OrbIcon.Text = "🕊️"
+OrbIcon.TextSize = 26
+OrbIcon.ZIndex = 1001
+OrbIcon.Parent = ToggleWidget
+
+local orbDragging, orbDragInput, orbDragStart, orbStartPos
+ToggleWidget.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        orbDragging = true
+        orbDragStart = input.Position
+        orbStartPos = ToggleWidget.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                orbDragging = false
+            end
+        end)
+    end
+end)
+
+ToggleWidget.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        orbDragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == orbDragInput and orbDragging then
+        local delta = input.Position - orbDragStart
+        ToggleWidget.Position = UDim2.new(orbStartPos.X.Scale, orbStartPos.X.Offset + delta.X, orbStartPos.Y.Scale, orbStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+function ToggleGUI()
+    isMinimized = not isMinimized
+    PlaySound(nil, isMinimized and 0.95 or 1.15)
+    if isMinimized then
+        TweenService:Create(MainFrame, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 780, 0, 0),
+            BackgroundTransparency = 1
+        }):Play()
+        task.delay(0.26, function()
+            MainFrame.Visible = false
+        end)
+        ToggleWidget.Visible = true
+    else
+        MainFrame.Visible = true
+        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 780, 0, 520),
+            BackgroundTransparency = 0
+        }):Play()
+    end
+end
+
+MinBtn.MouseButton1Click:Connect(ToggleGUI)
+CloseBtn.MouseButton1Click:Connect(ToggleGUI)
+ToggleWidget.MouseButton1Click:Connect(ToggleGUI)
+
+-- ==============================================================================
+--                               SIDEBAR & NAVIGATION
+-- ==============================================================================
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Size = UDim2.new(1, 0, 1, -60)
+ContentContainer.Position = UDim2.new(0, 0, 0, 60)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = MainFrame
+
+local SideBar = Instance.new("Frame")
+SideBar.Name = "SideBar"
+SideBar.Size = UDim2.new(0, 205, 1, 0)
+SideBar.BackgroundColor3 = Color3.fromRGB(13, 17, 26)
+SideBar.BorderSizePixel = 0
+SideBar.Parent = ContentContainer
+
+local SearchContainer = Instance.new("Frame")
+SearchContainer.Size = UDim2.new(1, -24, 0, 34)
+SearchContainer.Position = UDim2.new(0, 12, 0, 12)
+SearchContainer.BackgroundColor3 = Color3.fromRGB(19, 25, 38)
+SearchContainer.BorderSizePixel = 0
+SearchContainer.Parent = SideBar
+
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 8)
+SearchCorner.Parent = SearchContainer
+
+local SearchIcon = Instance.new("TextLabel")
+SearchIcon.Size = UDim2.new(0, 28, 1, 0)
+SearchIcon.BackgroundTransparency = 1
+SearchIcon.Text = "🔍"
+SearchIcon.TextSize = 12
+SearchIcon.Parent = SearchContainer
+
+local SearchInput = Instance.new("TextBox")
+SearchInput.Size = UDim2.new(1, -32, 1, 0)
+SearchInput.Position = UDim2.new(0, 28, 0, 0)
+SearchInput.BackgroundTransparency = 1
+SearchInput.PlaceholderText = "Quick Search..."
+SearchInput.PlaceholderColor3 = Color3.fromRGB(100, 120, 150)
+SearchInput.Text = ""
+SearchInput.TextColor3 = Color3.fromRGB(240, 245, 255)
+SearchInput.Font = Enum.Font.GothamMedium
+SearchInput.TextSize = 12
+SearchInput.TextXAlignment = Enum.TextXAlignment.Left
+SearchInput.ClearTextOnFocus = false
+SearchInput.Parent = SearchContainer
+
+local TabButtonsScroll = Instance.new("ScrollingFrame")
+TabButtonsScroll.Size = UDim2.new(1, 0, 1, -58)
+TabButtonsScroll.Position = UDim2.new(0, 0, 0, 58)
+TabButtonsScroll.BackgroundTransparency = 1
+TabButtonsScroll.ScrollBarThickness = 0
+TabButtonsScroll.Parent = SideBar
+
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.Padding = UDim.new(0, 6)
+TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Parent = TabButtonsScroll
+
+local PagesFolder = Instance.new("Frame")
+PagesFolder.Name = "Pages"
+PagesFolder.Size = UDim2.new(1, -215, 1, -16)
+PagesFolder.Position = UDim2.new(0, 210, 0, 8)
+PagesFolder.BackgroundTransparency = 1
+PagesFolder.Parent = ContentContainer
+
+local AllTabs = {}
+local CurrentActiveTab = nil
+
+local function CreateTab(name, icon, subtitle)
+    local TabButton = Instance.new("TextButton")
+    TabButton.Size = UDim2.new(1, -20, 0, 44)
+    TabButton.BackgroundColor3 = Color3.fromRGB(17, 22, 33)
+    TabButton.BorderSizePixel = 0
+    TabButton.Text = ""
+    TabButton.AutoButtonColor = false
+    TabButton.Parent = TabButtonsScroll
+
+    local TBCorner = Instance.new("UICorner")
+    TBCorner.CornerRadius = UDim.new(0, 8)
+    TBCorner.Parent = TabButton
+
+    local ActiveIndicator = Instance.new("Frame")
+    ActiveIndicator.Size = UDim2.new(0, 3, 0, 24)
+    ActiveIndicator.Position = UDim2.new(0, 0, 0.5, -12)
+    ActiveIndicator.BackgroundColor3 = Color3.fromRGB(0, 220, 255)
+    ActiveIndicator.BorderSizePixel = 0
+    ActiveIndicator.Visible = false
+    ActiveIndicator.Parent = TabButton
+
+    local IndicatorCorner = Instance.new("UICorner")
+    IndicatorCorner.CornerRadius = UDim.new(0, 2)
+    IndicatorCorner.Parent = ActiveIndicator
+
+    local TabIcon = Instance.new("TextLabel")
+    TabIcon.Size = UDim2.new(0, 28, 1, 0)
+    TabIcon.Position = UDim2.new(0, 10, 0, 0)
+    TabIcon.BackgroundTransparency = 1
+    TabIcon.Text = icon
+    TabIcon.TextSize = 17
+    TabIcon.Parent = TabButton
+
+    local TabTitle = Instance.new("TextLabel")
+    TabTitle.Size = UDim2.new(1, -44, 0, 18)
+    TabTitle.Position = UDim2.new(0, 42, 0, 6)
+    TabTitle.BackgroundTransparency = 1
+    TabTitle.Text = name
+    TabTitle.TextColor3 = Color3.fromRGB(160, 175, 200)
+    TabTitle.Font = Enum.Font.GothamBold
+    TabTitle.TextSize = 12
+    TabTitle.TextXAlignment = Enum.TextXAlignment.Left
+    TabTitle.Parent = TabButton
+
+    local TabSub = Instance.new("TextLabel")
+    TabSub.Size = UDim2.new(1, -44, 0, 14)
+    TabSub.Position = UDim2.new(0, 42, 0, 23)
+    TabSub.BackgroundTransparency = 1
+    TabSub.Text = subtitle or "Feature Suite"
+    TabSub.TextColor3 = Color3.fromRGB(90, 105, 130)
+    TabSub.Font = Enum.Font.GothamMedium
+    TabSub.TextSize = 10
+    TabSub.TextXAlignment = Enum.TextXAlignment.Left
+    TabSub.Parent = TabButton
+
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "_Page"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.ScrollBarThickness = 3
+    Page.ScrollBarImageColor3 = Color3.fromRGB(0, 210, 255)
+    Page.Visible = false
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Page.Parent = PagesFolder
+
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Parent = Page
+
+    local PagePadding = Instance.new("UIPadding")
+    PagePadding.PaddingTop = UDim.new(0, 4)
+    PagePadding.PaddingBottom = UDim.new(0, 20)
+    PagePadding.PaddingLeft = UDim.new(0, 4)
+    PagePadding.PaddingRight = UDim.new(0, 12)
+    PagePadding.Parent = Page
+
+    local tabData = {
+        Button = TabButton,
+        Indicator = ActiveIndicator,
+        Title = TabTitle,
+        Sub = TabSub,
+        Page = Page,
+        Name = name
+    }
+    table.insert(AllTabs, tabData)
+
+    local TWEEN_SMOOTH = TweenInfo.new(0.20, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
+
+    local function SetActive()
+        for _, t in ipairs(AllTabs) do
+            t.Page.Visible = false
+            t.Indicator.Visible = false
+            TweenService:Create(t.Button, TWEEN_SMOOTH, {BackgroundColor3 = Color3.fromRGB(17, 22, 33)}):Play()
+            TweenService:Create(t.Title, TWEEN_SMOOTH, {TextColor3 = Color3.fromRGB(160, 175, 200)}):Play()
+        end
+        Page.Visible = true
+        ActiveIndicator.Visible = true
+        TweenService:Create(TabButton, TWEEN_SMOOTH, {BackgroundColor3 = Color3.fromRGB(26, 34, 52)}):Play()
+        TweenService:Create(TabTitle, TWEEN_SMOOTH, {TextColor3 = Color3.fromRGB(255, 158, 198)}):Play()
+        CurrentActiveTab = tabData
+    end
+
+    TabButton.MouseButton1Click:Connect(function()
+        PlaySound(nil, 1.1)
+        SetActive()
+    end)
+
+    if #AllTabs == 1 then SetActive() end
+
+    local Controls = {}
+
+    function Controls:AddSection(text)
+        local SecFrame = Instance.new("Frame")
+        SecFrame.Size = UDim2.new(1, 0, 0, 28)
+        SecFrame.BackgroundTransparency = 1
+        SecFrame.Parent = Page
+
+        local SecLabel = Instance.new("TextLabel")
+        SecLabel.Size = UDim2.new(1, 0, 1, 0)
+        SecLabel.BackgroundTransparency = 1
+        SecLabel.Text = string.upper(text)
+        SecLabel.TextColor3 = Color3.fromRGB(120, 213, 255)
+        SecLabel.Font = Enum.Font.GothamBold
+        SecLabel.TextSize = 11
+        SecLabel.TextXAlignment = Enum.TextXAlignment.Left
+        SecLabel.Parent = SecFrame
+    end
+
+    function Controls:AddToggle(title, default, callback)
+        local ToggleFrame = Instance.new("Frame")
+        ToggleFrame.Size = UDim2.new(1, 0, 0, 44)
+        ToggleFrame.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
+        ToggleFrame.BorderSizePixel = 0
+        ToggleFrame.Parent = Page
+
+        local TCorner = Instance.new("UICorner")
+        TCorner.CornerRadius = UDim.new(0, 9)
+        TCorner.Parent = ToggleFrame
+
+        local TStroke = Instance.new("UIStroke")
+        TStroke.Color = Color3.fromRGB(28, 36, 52)
+        TStroke.Thickness = 1
+        TStroke.Parent = ToggleFrame
+
+        local TText = Instance.new("TextLabel")
+        TText.Size = UDim2.new(1, -70, 1, 0)
+        TText.Position = UDim2.new(0, 14, 0, 0)
+        TText.BackgroundTransparency = 1
+        TText.Text = title
+        TText.TextColor3 = Color3.fromRGB(225, 235, 250)
+        TText.Font = Enum.Font.GothamMedium
+        TText.TextSize = 13
+        TText.TextXAlignment = Enum.TextXAlignment.Left
+        TText.Parent = ToggleFrame
+
+        local SwitchPill = Instance.new("Frame")
+        SwitchPill.Size = UDim2.new(0, 42, 0, 22)
+        SwitchPill.Position = UDim2.new(1, -54, 0.5, -11)
+        SwitchPill.BackgroundColor3 = default and Color3.fromRGB(255, 158, 198) or Color3.fromRGB(35, 45, 65)
+        SwitchPill.BorderSizePixel = 0
+        SwitchPill.Parent = ToggleFrame
+
+        local PillCorner = Instance.new("UICorner")
+        PillCorner.CornerRadius = UDim.new(1, 0)
+        PillCorner.Parent = SwitchPill
+
+        local Thumb = Instance.new("Frame")
+        Thumb.Size = UDim2.new(0, 16, 0, 16)
+        Thumb.Position = default and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+        Thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        Thumb.BorderSizePixel = 0
+        Thumb.Parent = SwitchPill
+
+        local ThumbCorner = Instance.new("UICorner")
+        ThumbCorner.CornerRadius = UDim.new(1, 0)
+        ThumbCorner.Parent = Thumb
+
+        local ClickArea = Instance.new("TextButton")
+        ClickArea.Size = UDim2.new(1, 0, 1, 0)
+        ClickArea.BackgroundTransparency = 1
+        ClickArea.Text = ""
+        ClickArea.ZIndex = 10
+        ClickArea.Active = true
+        ClickArea.Parent = ToggleFrame
+
+        local state = default
+        ClickArea.MouseButton1Click:Connect(function()
+            state = not state
+            PlaySound(nil, state and 1.2 or 0.95)
+            TweenService:Create(SwitchPill, TWEEN_SMOOTH, {
+                BackgroundColor3 = state and Color3.fromRGB(255, 158, 198) or Color3.fromRGB(35, 45, 65)
+            }):Play()
+            TweenService:Create(Thumb, TWEEN_SMOOTH, {
+                Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+            }):Play()
+            pcall(callback, state)
+            if Config.AutoSave then task.spawn(function() SaveConfig(true) end) end
+        end)
+    end
+
+    function Controls:AddSlider(title, min, max, default, suffix, callback)
+        suffix = suffix or ""
+        local SliderFrame = Instance.new("Frame")
+        SliderFrame.Size = UDim2.new(1, 0, 0, 56)
+        SliderFrame.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
+        SliderFrame.BorderSizePixel = 0
+        SliderFrame.Parent = Page
+
+        local SCorner = Instance.new("UICorner")
+        SCorner.CornerRadius = UDim.new(0, 9)
+        SCorner.Parent = SliderFrame
+
+        local SStroke = Instance.new("UIStroke")
+        SStroke.Color = Color3.fromRGB(28, 36, 52)
+        SStroke.Thickness = 1
+        SStroke.Parent = SliderFrame
+
+        local SText = Instance.new("TextLabel")
+        SText.Size = UDim2.new(1, -100, 0, 24)
+        SText.Position = UDim2.new(0, 14, 0, 6)
+        SText.BackgroundTransparency = 1
+        SText.Text = title
+        SText.TextColor3 = Color3.fromRGB(225, 235, 250)
+        SText.Font = Enum.Font.GothamMedium
+        SText.TextSize = 13
+        SText.TextXAlignment = Enum.TextXAlignment.Left
+        SText.Parent = SliderFrame
+
+        local SVal = Instance.new("TextLabel")
+        SVal.Size = UDim2.new(0, 80, 0, 24)
+        SVal.Position = UDim2.new(1, -94, 0, 6)
+        SVal.BackgroundTransparency = 1
+        SVal.Text = tostring(default) .. suffix
+        SVal.TextColor3 = Color3.fromRGB(0, 220, 255)
+        SVal.Font = Enum.Font.GothamBold
+        SVal.TextSize = 12
+        SVal.TextXAlignment = Enum.TextXAlignment.Right
+        SVal.Parent = SliderFrame
+
+        local Track = Instance.new("Frame")
+        Track.Size = UDim2.new(1, -28, 0, 6)
+        Track.Position = UDim2.new(0, 14, 0, 36)
+        Track.BackgroundColor3 = Color3.fromRGB(26, 34, 50)
+        Track.BorderSizePixel = 0
+        Track.Parent = SliderFrame
+
+        local TrackCorner = Instance.new("UICorner")
+        TrackCorner.CornerRadius = UDim.new(1, 0)
+        TrackCorner.Parent = Track
+
+        local Fill = Instance.new("Frame")
+        local initPercent = math.clamp((default - min) / (max - min), 0, 1)
+        Fill.Size = UDim2.new(initPercent, 0, 1, 0)
+        Fill.BackgroundColor3 = Color3.fromRGB(0, 210, 255)
+        Fill.BorderSizePixel = 0
+        Fill.Parent = Track
+
+        local FillCorner = Instance.new("UICorner")
+        FillCorner.CornerRadius = UDim.new(1, 0)
+        FillCorner.Parent = Fill
+
+        local SliderBtn = Instance.new("TextButton")
+        SliderBtn.Size = UDim2.new(1, 0, 0, 20)
+        SliderBtn.Position = UDim2.new(0, 0, 0, -7)
+        SliderBtn.BackgroundTransparency = 1
+        SliderBtn.Text = ""
+        SliderBtn.ZIndex = 10
+        SliderBtn.Active = true
+        SliderBtn.Parent = Track
+
+        local sliding = false
+        local function UpdateSlider(input)
+            local pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
+            local value = math.floor(min + ((max - min) * pos))
+            Fill.Size = UDim2.new(pos, 0, 1, 0)
+            SVal.Text = tostring(value) .. suffix
+            pcall(callback, value)
+            if Config.AutoSave then task.spawn(function() SaveConfig(true) end) end
+        end
+
+        SliderBtn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                sliding = true
+                UpdateSlider(input)
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                sliding = false
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                UpdateSlider(input)
+            end
+        end)
+    end
+
+    function Controls:AddDropdown(title, options, default, callback)
+        local DropFrame = Instance.new("Frame")
+        DropFrame.Size = UDim2.new(1, 0, 0, 44)
+        DropFrame.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
+        DropFrame.BorderSizePixel = 0
+        DropFrame.Parent = Page
+
+        local DCorner = Instance.new("UICorner")
+        DCorner.CornerRadius = UDim.new(0, 9)
+        DCorner.Parent = DropFrame
+
+        local DStroke = Instance.new("UIStroke")
+        DStroke.Color = Color3.fromRGB(28, 36, 52)
+        DStroke.Thickness = 1
+        DStroke.Parent = DropFrame
+
+        local DText = Instance.new("TextLabel")
+        DText.Size = UDim2.new(1, -160, 1, 0)
+        DText.Position = UDim2.new(0, 14, 0, 0)
+        DText.BackgroundTransparency = 1
+        DText.Text = title
+        DText.TextColor3 = Color3.fromRGB(225, 235, 250)
+        DText.Font = Enum.Font.GothamMedium
+        DText.TextSize = 13
+        DText.TextXAlignment = Enum.TextXAlignment.Left
+        DText.Parent = DropFrame
+
+        local DropBtn = Instance.new("TextButton")
+        DropBtn.Size = UDim2.new(0, 145, 0, 28)
+        DropBtn.Position = UDim2.new(1, -155, 0.5, -14)
+        DropBtn.BackgroundColor3 = Color3.fromRGB(24, 32, 48)
+        DropBtn.Text = tostring(default) .. " ▾"
+        DropBtn.TextColor3 = Color3.fromRGB(0, 220, 255)
+        DropBtn.Font = Enum.Font.GothamBold
+        DropBtn.TextSize = 11
+        DropBtn.ZIndex = 10
+        DropBtn.Active = true
+        DropBtn.Parent = DropFrame
+
+        local DBCorner = Instance.new("UICorner")
+        DBCorner.CornerRadius = UDim.new(0, 6)
+        DBCorner.Parent = DropBtn
+
+        local currentIdx = table.find(options, default) or 1
+        DropBtn.MouseButton1Click:Connect(function()
+            currentIdx = currentIdx % #options + 1
+            local selected = options[currentIdx]
+            DropBtn.Text = tostring(selected) .. " ▾"
+            PlaySound(nil, 1.1)
+            pcall(callback, selected)
+            if Config.AutoSave then task.spawn(function() SaveConfig(true) end) end
+        end)
+    end
+
+    function Controls:AddButton(title, btnText, callback)
+        local BtnFrame = Instance.new("Frame")
+        BtnFrame.Size = UDim2.new(1, 0, 0, 44)
+        BtnFrame.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
+        BtnFrame.BorderSizePixel = 0
+        BtnFrame.Parent = Page
+
+        local BCorner = Instance.new("UICorner")
+        BCorner.CornerRadius = UDim.new(0, 9)
+        BCorner.Parent = BtnFrame
+
+        local BStroke = Instance.new("UIStroke")
+        BStroke.Color = Color3.fromRGB(28, 36, 52)
+        BStroke.Thickness = 1
+        BStroke.Parent = BtnFrame
+
+        local BText = Instance.new("TextLabel")
+        BText.Size = UDim2.new(1, -140, 1, 0)
+        BText.Position = UDim2.new(0, 14, 0, 0)
+        BText.BackgroundTransparency = 1
+        BText.Text = title
+        BText.TextColor3 = Color3.fromRGB(225, 235, 250)
+        BText.Font = Enum.Font.GothamMedium
+        BText.TextSize = 13
+        BText.TextXAlignment = Enum.TextXAlignment.Left
+        BText.Parent = BtnFrame
+
+        local ActionBtn = Instance.new("TextButton")
+        ActionBtn.Size = UDim2.new(0, 120, 0, 28)
+        ActionBtn.Position = UDim2.new(1, -130, 0.5, -14)
+        ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 190, 235)
+        ActionBtn.Text = btnText or "Execute"
+        ActionBtn.TextColor3 = Color3.fromRGB(10, 15, 24)
+        ActionBtn.Font = Enum.Font.GothamBold
+        ActionBtn.TextSize = 12
+        ActionBtn.ZIndex = 10
+        ActionBtn.Active = true
+        ActionBtn.Parent = BtnFrame
+
+        local ActCorner = Instance.new("UICorner")
+        ActCorner.CornerRadius = UDim.new(0, 6)
+        ActCorner.Parent = ActionBtn
+
+        ActionBtn.MouseButton1Click:Connect(function()
+            PlaySound(nil, 1.2)
+            pcall(callback)
+            TweenService:Create(ActionBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(0, 255, 255)}):Play()
+            task.delay(0.15, function()
+                TweenService:Create(ActionBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 190, 235)}):Play()
+            end)
+        end)
+    end
+
+    function Controls:AddKeybind(title, defaultKey, callback)
+        local KeyFrame = Instance.new("Frame")
+        KeyFrame.Size = UDim2.new(1, 0, 0, 44)
+        KeyFrame.BackgroundColor3 = Color3.fromRGB(16, 21, 32)
+        KeyFrame.BorderSizePixel = 0
+        KeyFrame.Parent = Page
+
+        local KCorner = Instance.new("UICorner")
+        KCorner.CornerRadius = UDim.new(0, 9)
+        KCorner.Parent = KeyFrame
+
+        local KStroke = Instance.new("UIStroke")
+        KStroke.Color = Color3.fromRGB(28, 36, 52)
+        KStroke.Thickness = 1
+        KStroke.Parent = KeyFrame
+
+        local KText = Instance.new("TextLabel")
+        KText.Size = UDim2.new(1, -100, 1, 0)
+        KText.Position = UDim2.new(0, 14, 0, 0)
+        KText.BackgroundTransparency = 1
+        KText.Text = title
+        KText.TextColor3 = Color3.fromRGB(225, 235, 250)
+        KText.Font = Enum.Font.GothamMedium
+        KText.TextSize = 13
+        KText.TextXAlignment = Enum.TextXAlignment.Left
+        KText.Parent = KeyFrame
+
+        local KeyBadge = Instance.new("TextButton")
+        KeyBadge.Size = UDim2.new(0, 80, 0, 26)
+        KeyBadge.Position = UDim2.new(1, -90, 0.5, -13)
+        KeyBadge.BackgroundColor3 = Color3.fromRGB(24, 32, 48)
+        KeyBadge.Text = defaultKey.Name
+        KeyBadge.TextColor3 = Color3.fromRGB(0, 230, 255)
+        KeyBadge.Font = Enum.Font.GothamBold
+        KeyBadge.TextSize = 12
+        KeyBadge.ZIndex = 10
+        KeyBadge.Active = true
+        KeyBadge.Parent = KeyFrame
+
+        local KBCorner = Instance.new("UICorner")
+        KBCorner.CornerRadius = UDim.new(0, 6)
+        KBCorner.Parent = KeyBadge
+
+        local currentKey = defaultKey
+        local recording = false
+
+        KeyBadge.MouseButton1Click:Connect(function()
+            recording = true
+            KeyBadge.Text = "..."
+            KeyBadge.TextColor3 = Color3.fromRGB(255, 200, 0)
+        end)
+
+        UserInputService.InputBegan:Connect(function(input, processed)
+            if recording and input.UserInputType == Enum.UserInputType.Keyboard then
+                currentKey = input.KeyCode
+                KeyBadge.Text = currentKey.Name
+                KeyBadge.TextColor3 = Color3.fromRGB(0, 230, 255)
+                recording = false
+                pcall(callback, currentKey)
+                if Config.AutoSave then task.spawn(function() SaveConfig(true) end) end
+            elseif not processed and input.KeyCode == currentKey and not recording then
+                pcall(callback, currentKey)
+            end
+        end)
+    end
+
+    return Controls
+end
+
+SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+    local q = string.lower(SearchInput.Text)
+    for _, tab in ipairs(AllTabs) do
+        for _, child in ipairs(tab.Page:GetChildren()) do
+            if child:IsA("Frame") then
+                local label = child:FindFirstChildOfClass("TextLabel")
+                if label then
+                    if q == "" or string.find(string.lower(label.Text), q) then
+                        child.Visible = true
+                    else
+                        child.Visible = false
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ==============================================================================
+--                                TABS POPULATION
+-- ==============================================================================
+
+-- ⚽ Tab 1: Metavision Aim & Shooting
+local AimTab = CreateTab("Metavision", "⚽", "Aimbot & Ballistics")
+AimTab:AddSection("Target Acquisition")
+AimTab:AddToggle("Metavision Silent Goal Aim", Config.SilentAim, function(v)
+    Config.SilentAim = v
+    Notify("Metavision Aim", v and "Enabled: Directing kicks to enemy net." or "Disabled", 1.5, "⚽")
+end)
+
+AimTab:AddDropdown("Target Goal Direction", {"Auto (Team-Based)", "Force Left Goal (P1)", "Force Right Goal (P2)"}, Config.GoalOverride, function(mode)
+    Config.GoalOverride = mode
+    Notify("Goal Target", "Target side set to: " .. mode, 1.5, "🎯")
+end)
+
+AimTab:AddDropdown("Aim Target Placement", {"Top Corners", "Bottom Corners", "Center Net", "Top Left", "Top Right", "GK Blindspot"}, Config.ShotTargetMode, function(mode)
+    Config.ShotTargetMode = mode
+    Notify("Aim Placement", "Target zone set to: " .. mode, 1.5, "🎯")
+end)
+
+AimTab:AddSection("Ballistic Rocket Power")
+AimTab:AddToggle("Super Cannon Rocket Shot", Config.SuperRocketShot, function(v)
+    Config.SuperRocketShot = v
+    Notify("Rocket Shot", v and "Enabled: Supersonic physical ball velocity." or "Disabled", 1.5, "🚀")
+end)
+
+AimTab:AddToggle("Ballistic Arc (Anti-Gravity Drop)", Config.BallisticArc, function(v)
+    Config.BallisticArc = v
+end)
+
+AimTab:AddToggle("Auto Max Power Override", Config.MaxShotPower, function(v)
+    Config.MaxShotPower = v
+end)
+
+AimTab:AddSlider("Shot Power Multiplier", 50, 500, Config.ShotPower, "%", function(v)
+    Config.ShotPower = v
+end)
+
+AimTab:AddKeybind("Instant Rocket Goal Key", Config.InstantGoalKey, function()
+    FireSuperShot()
+end)
+
+AimTab:AddSection("🌪️ Custom Curve & Knuckle Studio")
+AimTab:AddToggle("Dynamic Lateral Curve Bend", Config.AutoCurve, function(v)
+    Config.AutoCurve = v
+end)
+
+AimTab:AddSlider("Curve Swerve Intensity", 0, 50, Config.CurveIntensity, "%", function(v)
+    Config.CurveIntensity = v
+end)
+
+AimTab:AddSlider("Dipping Topspin Drop", 0, 30, Config.TopspinDip, " deg", function(v)
+    Config.TopspinDip = v
+end)
+
+AimTab:AddToggle("Chaos Knuckleball Spin", Config.Knuckleball, function(v)
+    Config.Knuckleball = v
+    Notify("Knuckleball", v and "Enabled: Erratic knuckleball trajectory." or "Disabled", 1.5, "🌪️")
+end)
+
+AimTab:AddSlider("Knuckleball Chaos Intensity", 0, 30, Config.KnuckleIntensity, "%", function(v)
+    Config.KnuckleIntensity = v
+end)
+
+AimTab:AddSection("Assists & Passing")
+AimTab:AddToggle("Smart Teammate Auto-Pass", Config.AutoPass, function(v)
+    Config.AutoPass = v
+    Notify("Smart Pass", v and "Enabled: Metavision dynamic through-ball passing" or "Disabled", 1.5, "🎯")
+end)
+
+AimTab:AddDropdown("Pass Style", {"Smart Through Ball", "Direct To Feet", "Lofted Lob"}, Config.PassMode, function(mode)
+    Config.PassMode = mode
+    Notify("Pass Style", "Set to: " .. mode, 1.5, "🎯")
+end)
+
+AimTab:AddSlider("Pass Prediction Leading", 0.5, 3.0, Config.PassLeadingMultiplier, "x", function(v)
+    Config.PassLeadingMultiplier = v
+end)
+
+AimTab:AddSlider("Pass Launch Power", 50, 150, Config.PassPower, " stud/s", function(v)
+    Config.PassPower = v
+end)
+
+AimTab:AddKeybind("Auto-Pass Keybind", Config.AutoPassKey, function()
+    ExecuteAutoPass()
+end)
+
+AimTab:AddButton("Execute Smart Pass", "Pass Ball", function()
+    ExecuteAutoPass()
+end)
+
+AimTab:AddToggle("Instant Rebound Snatcher", Config.ReboundMagnet, function(v)
+    Config.ReboundMagnet = v
+end)
+
+AimTab:AddToggle("Auto Aerial Volley & Header", Config.AutoHeaderVolley, function(v)
+    Config.AutoHeaderVolley = v
+end)
+
+AimTab:AddToggle("Shot Trajectory Laser Line", Config.TrajectoryESP, function(v)
+    Config.TrajectoryESP = v
+end)
+
+-- 🧲 Tab 2: Ball Control & Retention
+local BallTab = CreateTab("Ball Control", "🧲", "Retention & Physics")
+BallTab:AddSection("Possession & Protection")
+BallTab:AddToggle("Master Ball Retention", Config.BallControl, function(v)
+    Config.BallControl = v
+end)
+
+BallTab:AddToggle("🛡️ 360° Ball Orbital Shield", Config.BallOrbitalShield, function(v)
+    Config.BallOrbitalShield = v
+    Notify("Orbital Shield", v and "Enabled: Ball orbits in high-speed protective barrier." or "Disabled", 1.5, "🛡️")
+end)
+
+BallTab:AddSlider("Orbit Shield Speed", 2, 14, Config.BallOrbitSpeed, " spd", function(v)
+    Config.BallOrbitSpeed = v
+end)
+
+BallTab:AddSlider("Orbit Shield Radius", 2, 8, Config.BallOrbitRadius, " studs", function(v)
+    Config.BallOrbitRadius = v
+end)
+
+BallTab:AddToggle("🌈 Air Juggle (Infinite Rainbow Float)", Config.AirJuggle, function(v)
+    Config.AirJuggle = v
+    Notify("Air Juggle", v and "Enabled: Ball suspended over defenders' heads!" or "Disabled", 1.5, "🌈")
+end)
+
+BallTab:AddSlider("Air Juggle Height", 4, 14, Config.AirJuggleHeight, " studs", function(v)
+    Config.AirJuggleHeight = v
+end)
+
+BallTab:AddToggle("0ms Auto-Skill Chaining", Config.SkillChaining, function(v)
+    Config.SkillChaining = v
+end)
+
+BallTab:AddToggle("Ball Magnet Aura (Vacuum Pull)", Config.BallMagnet, function(v)
+    Config.BallMagnet = v
+end)
+
+BallTab:AddSlider("Magnet Pull Distance", 10, 45, Config.BallMagnetDistance, " studs", function(v)
+    Config.BallMagnetDistance = v
+end)
+
+BallTab:AddToggle("Ball Glue (Zero-Bounce Feet Lock)", Config.BallGlue, function(v)
+    Config.BallGlue = v
+end)
+
+BallTab:AddToggle("360° Anti-Steal Body Shield", Config.AntiStealShield, function(v)
+    Config.AntiStealShield = v
+end)
+
+BallTab:AddSection("Cursor Telekinesis & Warps")
+BallTab:AddToggle("Mouse Ball Telekinesis", Config.BallTelekinesis, function(v)
+    Config.BallTelekinesis = v
+    if not v then
+        pcall(function()
+            local ball = GetBall()
+            if ball then
+                local bv = ball:FindFirstChild("MetavisionRocketBV")
+                if bv then bv:Destroy() end
+            end
+        end)
+    end
+    Notify("Telekinesis", v and "ON: Guide loose ball with cursor." or "OFF", 1.5, "🪄")
+end)
+
+BallTab:AddKeybind("Ball Steer Keybind", Config.BallTelekinesisKey, function()
+    Config.BallTelekinesis = not Config.BallTelekinesis
+    Notify("Ball Steer", Config.BallTelekinesis and "ON" or "OFF", 1.5, "🪄")
+end)
+
+BallTab:AddButton("Bring Ball To Boots", "Pull Ball", function()
+    pcall(function()
+        local ball = GetBall()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if ball and hrp then
+            local targetPos = hrp.Position + (hrp.CFrame.LookVector * 2.5)
+            ball.AssemblyLinearVelocity = (targetPos - ball.Position).Unit * 120
+            if Events and Events:FindFirstChild("SlideBegan") then Events.SlideBegan:FireServer() end
+            Notify("🧲 Bring Ball", "Ball pulled to feet!", 1.5)
+        end
+    end)
+end)
+
+BallTab:AddButton("Freeze / Stop Ball", "Freeze Ball", function()
+    pcall(function()
+        local ball = GetBall()
+        if ball then
+            ball.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            ball.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            local bv = ball:FindFirstChildOfClass("BodyVelocity")
+            if bv then bv:Destroy() end
+            Notify("❄️ Ball Frozen", "Velocity dead-stopped!", 1.5)
+        end
+    end)
+end)
+
+-- 🏆 Tab 3: Autonomous Match Farm & Gacha
+local FarmTab = CreateTab("Auto-Farm", "🏆", "Goal Farm & Gacha")
+FarmTab:AddSection("🏆 Autonomous Goal Farm")
+FarmTab:AddToggle("Master Autonomous Goal Farm", Config.GoalAutoFarm, function(v)
+    Config.GoalAutoFarm = v
+    if not v then
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.AssemblyLinearVelocity = Vector3.zero
+            end
+        end)
+        Notify("Goal Farm", "Disabled & All Farming Halted.", 1.5, "🛑")
+    else
+        Notify("Goal Farm", "Enabled: Autonomous goal scoring active.", 1.5, "🏆")
+    end
+end)
+
+FarmTab:AddSlider("Farm Cycle Delay", 0.4, 2.5, Config.AutoFarmDelay, "s", function(v)
+    Config.AutoFarmDelay = v
+end)
+
+FarmTab:AddSection("🎰 Secret Character & Gacha Roller")
+FarmTab:AddSlider("Auto-Spin Speed Delay", 0.02, 0.4, Config.RollDelay or 0.05, "s", function(v)
+    Config.RollDelay = v
+end)
+
+FarmTab:AddDropdown("Target Roll Character", {
+    "Any Secret / Mythic", "Any Secret", "Ronaldo", "Devil Fruit User", "Stand User", "Ichigo", "Sae", "Nagi", "Aiku", "Barou", "Yukimiya", "Kaiser", "DonLorenzo", "Rin", "Shidou", "Reo", "Chigiri", "Bachira"
+}, Config.TargetRollCharacter, function(char)
+    Config.TargetRollCharacter = char
+    Notify("Gacha Target", "Target character set to: " .. char, 1.5, "🎰")
+end)
+
+FarmTab:AddToggle("Auto-Roll Characters (Stops on Hit)", Config.AutoRollCharacter, function(v)
+    Config.AutoRollCharacter = v
+    Notify("Auto-Roll", v and ("Started rolling for " .. tostring(Config.TargetRollCharacter)) or "Stopped", 2, "🎰")
+end)
+
+FarmTab:AddToggle("Auto-Roll MVP Celebrations", Config.AutoRollMVP, function(v)
+    Config.AutoRollMVP = v
+end)
+
+FarmTab:AddToggle("Auto-Roll Emotes", Config.AutoRollEmote, function(v)
+    Config.AutoRollEmote = v
+end)
+
+FarmTab:AddSection("🎁 Promo Codes")
+FarmTab:AddToggle("Auto-Redeem Codes on Join", Config.AutoRedeemCodes, function(v)
+    Config.AutoRedeemCodes = v
+end)
+
+FarmTab:AddButton("Redeem All Promo Codes Now", "Redeem Codes", function()
+    RedeemAllPromoCodes()
+end)
+
+-- 🧤 Tab 4: Autonomous Goalkeeper & Defense
+local DefTab = CreateTab("Defense & GK", "🧤", "Auto GK & Steals")
+DefTab:AddSection("Autonomous Goalkeeper Suite")
+DefTab:AddToggle("Auto GK (Pro Human Goalkeeper)", Config.AutoGK, function(v)
+    Config.AutoGK = v
+    Notify("Auto GK", v and "Enabled: Pro Human GK Active!" or "Disabled", 1.5, "🧤")
+end)
+
+DefTab:AddToggle("God GK Pro Diving Interception", Config.GodGK, function(v)
+    Config.GodGK = v
+end)
+
+DefTab:AddToggle("🧠 Superhuman Shot Vector Predictor", Config.SuperhumanGKPredictor, function(v)
+    Config.SuperhumanGKPredictor = v
+    Notify("GK Predictor", v and "ON: Pre-dives to calculated intercept vector!" or "OFF", 1.5, "🧠")
+end)
+
+DefTab:AddToggle("🚀 Anti-Chip & Top Corner Sweeper", Config.AntiChipSweeper, function(v)
+    Config.AntiChipSweeper = v
+    Notify("Anti-Chip", v and "ON: Sweeps upper-90 and dipping chip shots!" or "OFF", 1.5, "🚀")
+end)
+
+DefTab:AddToggle("⚡ GK Auto Long-Range Counter Clear", Config.GKAutoCounterClear, function(v)
+    Config.GKAutoCounterClear = v
+end)
+
+DefTab:AddToggle("Auto GK: Sweeper Net Arc Positioning", Config.AutoGKPositioning, function(v)
+    Config.AutoGKPositioning = v
+end)
+
+DefTab:AddSlider("Auto GK Detection Range", 15, 60, Config.AutoGKDistance, " studs", function(v)
+    Config.AutoGKDistance = v
+end)
+
+DefTab:AddKeybind("Manual GK Directional Dive Key", Config.AutoGKDiveKey, function()
+    pcall(function()
+        local ball = GetBall()
+        local myChar = LocalPlayer.Character
+        local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if ball and myHrp then
+            local relVec = myHrp.CFrame:PointToObjectSpace(ball.Position)
+            local dir = "Forward"
+            if relVec.X < -2.5 then dir = "Left" elseif relVec.X > 2.5 then dir = "Right" end
+            if Events and Events:FindFirstChild("GKDive") then
+                Events.GKDive:FireServer(dir)
+                Notify("🧤 Manual GK Dive", "Dived " .. dir .. "!", 1.5)
+            end
+        end
+    end)
+end)
+
+DefTab:AddSection("Field Defense & Reach")
+DefTab:AddToggle("Auto Slide Steal / Tackle", Config.AutoTackle, function(v)
+    Config.AutoTackle = v
+    Notify("Auto Tackle", v and "Enabled: Will automatically steal ball from enemies." or "Disabled", 1.5, "🛡️")
+end)
+
+DefTab:AddToggle("Steal Teleport / Lunge TP", Config.AutoStealTeleport, function(v)
+    Config.AutoStealTeleport = v
+    Notify("Steal Teleport", v and "Enabled: Physical lunge towards ball carrier." or "Disabled: Normal position steal (No TP)", 1.5, "🛡️")
+end)
+
+DefTab:AddToggle("Enemy-Only Strict Filter", Config.AutoStealEnemiesOnly, function(v)
+    Config.AutoStealEnemiesOnly = v
+    Notify("Enemy-Only Filter", v and "Enabled: Teammates will never be tackled." or "Disabled", 1.5, "🛡️")
+end)
+
+DefTab:AddKeybind("Manual Tackle Key", Config.TackleKey, function()
+    pcall(function()
+        if Events and Events:FindFirstChild("SlideBegan") then Events.SlideBegan:FireServer() end
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and IsEnemy(plr) and plr.Character and plr.Character:GetAttribute("HasBall") == true then
+                if Events and Events:FindFirstChild("StealBallSlide") then Events.StealBallSlide:InvokeServer(plr.Character) end
+            end
+        end
+    end)
+end)
+
+DefTab:AddSlider("Auto-Steal & Tackle Range", 8, 50, Config.TackleDistance, " studs", function(v)
+    Config.TackleDistance = v
+end)
+
+DefTab:AddToggle("Hitbox Expander (Extended Reach)", Config.HitboxExpander, function(v)
+    Config.HitboxExpander = v
+end)
+
+DefTab:AddSlider("Hitbox Size", 4, 16, Config.HitboxSize, " studs", function(v)
+    Config.HitboxSize = v
+end)
+
+DefTab:AddToggle("Anti-Ragdoll Knockdown", Config.AntiRagdoll, function(v)
+    Config.AntiRagdoll = v
+end)
+
+DefTab:AddToggle("Anti-Stun", Config.AntiStun, function(v)
+    Config.AntiStun = v
+end)
+
+-- ⚡ Tab 5: Movement & Mobility
+local MoveTab = CreateTab("Movement", "⚡", "Speed & Flight")
+MoveTab:AddSection("WalkSpeed & Jump")
+MoveTab:AddToggle("WalkSpeed Multiplier", Config.SpeedBoost, function(v)
+    Config.SpeedBoost = v
+end)
+
+MoveTab:AddKeybind("Speed Boost Keybind", Config.SpeedKey, function()
+    Config.SpeedBoost = not Config.SpeedBoost
+    Notify("Speed Boost", Config.SpeedBoost and ("ON (" .. Config.WalkSpeed .. " WS)") or "OFF", 1.5)
+end)
+
+MoveTab:AddSlider("WalkSpeed Value", 16, 75, Config.WalkSpeed, " WS", function(v)
+    Config.WalkSpeed = v
+end)
+
+MoveTab:AddToggle("JumpPower Boost", Config.JumpPowerBoost, function(v)
+    Config.JumpPowerBoost = v
+end)
+
+MoveTab:AddSlider("JumpPower Value", 50, 125, Config.JumpPower, " JP", function(v)
+    Config.JumpPower = v
+end)
+
+MoveTab:AddSection("Flight & Noclip")
+MoveTab:AddToggle("Pitch 3D Fly (WASD+Space)", Config.Fly, function(v)
+    Config.Fly = v
+    Notify("Pitch Fly", v and "Enabled: WASD+Space Flight." or "Disabled", 1.5)
+end)
+
+MoveTab:AddKeybind("Fly Keybind", Config.FlyKey, function()
+    Config.Fly = not Config.Fly
+    Notify("Pitch Fly", Config.Fly and "Enabled" or "Disabled", 1.5)
+end)
+
+MoveTab:AddSlider("Fly Speed", 20, 100, Config.FlySpeed, " spd", function(v)
+    Config.FlySpeed = v
+end)
+
+MoveTab:AddToggle("Pitch Noclip", Config.Noclip, function(v)
+    Config.Noclip = v
+end)
+
+MoveTab:AddSection("Dribble & Ankle Breaker")
+MoveTab:AddToggle("Auto Dribble (Evade Incoming Slides)", Config.AutoDribble, function(v)
+    Config.AutoDribble = v
+end)
+
+MoveTab:AddButton("Manual Dribble", "Dribble", function()
+    if Events and Events:FindFirstChild("Dribble") then
+        Events.Dribble:InvokeServer()
+        Notify("Dribble", "Ankle breaker executed!", 1.2, "🪄")
+    end
+end)
+
+MoveTab:AddButton("Rainbow Flick", "Flick Ball", function()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if char and hrp and char:GetAttribute("HasBall") == true then
+            local flickVec = hrp.CFrame.LookVector + Vector3.new(0, 1, 0)
+            if Events and Events:FindFirstChild("RainbowFlick") then
+                Events.RainbowFlick:FireServer(flickVec)
+                Notify("Rainbow Flick", "Flicked ball overhead!", 1.5, "🌈")
+            end
+        end
+    end)
+end)
+
+MoveTab:AddSection("Breakaway Dash")
+MoveTab:AddToggle("Auto Breakaway Dash Boost", Config.DashBurst, function(v)
+    Config.DashBurst = v
+end)
+
+MoveTab:AddButton("Execute Dash Burst", "Dash Burst", function()
+    ExecuteDashBurst()
+end)
+
+MoveTab:AddKeybind("Dash Burst Key", Config.DashBurstKey, function()
+    ExecuteDashBurst()
+end)
+
+-- 🔥 Tab 6: Combat & Flow
+local CombatTab = CreateTab("Flow", "🔥", "Awakening & QTE")
+CombatTab:AddSection("Ego Awakening")
+CombatTab:AddToggle("Auto Trigger Awakening (Flow)", Config.AutoAwakening, function(v)
+    Config.AutoAwakening = v
+end)
+
+CombatTab:AddKeybind("Awakening Keybind", Config.AwakeningKey, function()
+    if Events and Events:FindFirstChild("UseAwakening") then
+        Events.UseAwakening:FireServer()
+        Notify("Ego Flow", "Awakening triggered!", 2, "🔥")
+    end
+end)
+
+CombatTab:AddSection("Clash & QTE Mastery")
+CombatTab:AddToggle("Auto 100% Clash & QTE Win", Config.AutoMash, function(v)
+    Config.AutoMash = v
+end)
+
+CombatTab:AddButton("Burst Mash (Win Instant Clash)", "Mash Burst", function()
+    if Events and Events:FindFirstChild("Mash") then
+        for i = 1, 20 do Events.Mash:FireServer() end
+        Notify("Ball Clash", "20x Mash Burst fired!", 2, "⚡")
+    end
+end)
+
+-- 🤡 Tab 7: Human Trolling & Celebrations
+local TrollTab = CreateTab("Trolling", "🤡", "Mind Games & Flex")
+TrollTab:AddSection("Mind Games & Baiting")
+TrollTab:AddToggle("Master Human Trolling Mode", Config.HumanTrolling, function(v)
+    Config.HumanTrolling = v
+    Notify("Human Trolling", v and "Enabled: 100% Legit-Looking Troll Mode Active!" or "Disabled", 1.5, "🤡")
+end)
+
+TrollTab:AddToggle("Fake Shot Feint (Bait Slides)", Config.FakeShotFeint, function(v)
+    Config.FakeShotFeint = v
+end)
+
+TrollTab:AddButton("Execute Fake Shot Feint", "Fake Shot", function()
+    ExecuteFakeShotFeint()
+end)
+
+TrollTab:AddToggle("Ankle Breaker Bait (Stand & Juke)", Config.AnkleBreakerBait, function(v)
+    Config.AnkleBreakerBait = v
+end)
+
+TrollTab:AddSection("Goal Showboating & Finish")
+TrollTab:AddToggle("Crossbar Dink (Top-Post Style Goal)", Config.CrossbarDink, function(v)
+    Config.CrossbarDink = v
+end)
+
+TrollTab:AddToggle("Goal Line Tease (Walk-In Finish)", Config.GoalLineTease, function(v)
+    Config.GoalLineTease = v
+end)
+
+TrollTab:AddToggle("Auto Flex & Emote on Goal", Config.TrollEmoteOnGoal, function(v)
+    Config.TrollEmoteOnGoal = v
+end)
+
+TrollTab:AddDropdown("Goal Celebration Emote", {
+    "Auto (Random)", "SUI", "Dance", "Kazotsky Kick", "Floss", "Speed", "LUFFY", "Top Priority"
+}, Config.SelectedGoalEmote, function(e)
+    Config.SelectedGoalEmote = e
+end)
+
+-- 👁️ Tab 8: Visuals, HUD & ESP Studio
+local VisualsTab = CreateTab("Visuals", "👁️", "HUD & Metavision")
+VisualsTab:AddSection("Cyber Metavision HUD")
+VisualsTab:AddToggle("Cyber Metavision Status HUD", Config.CyberHUD, function(v)
+    Config.CyberHUD = v
+end)
+
+VisualsTab:AddSection("Pass & Danger Vision ESP")
+VisualsTab:AddToggle("🎯 Pass Lane & Interception ESP", Config.PassLaneESP, function(v)
+    Config.PassLaneESP = v
+    Notify("Pass Lane ESP", v and "ON: Visualizing open passing lanes!" or "OFF", 1.5, "🎯")
+end)
+
+VisualsTab:AddToggle("⚠️ Enemy Tackle Danger Zone ESP", Config.TackleDangerZoneESP, function(v)
+    Config.TackleDangerZoneESP = v
+    Notify("Tackle Danger ESP", v and "ON: Visualizing steal threat radius!" or "OFF", 1.5, "⚠️")
+end)
+
+VisualsTab:AddSlider("Tackle Danger Visual Radius", 10, 30, Config.TackleDangerRadius, " studs", function(v)
+    Config.TackleDangerRadius = v
+end)
+
+VisualsTab:AddSection("Ball & Player ESP")
+VisualsTab:AddToggle("Ball Metavision ESP", Config.BallESP, function(v)
+    Config.BallESP = v
+end)
+
+VisualsTab:AddToggle("Ball Distance Tracer", Config.BallTracer, function(v)
+    Config.BallTracer = v
+end)
+
+VisualsTab:AddToggle("Player Metavision ESP", Config.PlayerESP, function(v)
+    Config.PlayerESP = v
+end)
+
+VisualsTab:AddToggle("Player 2D Box ESP", Config.PlayerBox, function(v)
+    Config.PlayerBox = v
+end)
+
+VisualsTab:AddToggle("Player Info & Role HUD", Config.PlayerInfoESP, function(v)
+    Config.PlayerInfoESP = v
+end)
+
+VisualsTab:AddToggle("Goal Box 3D ESP", Config.GoalESP, function(v)
+    Config.GoalESP = v
+end)
+
+VisualsTab:AddToggle("Anti Camera Shake", Config.AntiCameraShake, function(v)
+    Config.AntiCameraShake = v
+end)
+
+-- 🌐 Tab 9: Server & Teleports
+local ServerTab = CreateTab("Server", "🌐", "Teleports & Safety")
+ServerTab:AddSection("Pitch Teleports")
+ServerTab:AddButton("Teleport to Ball", "To Ball", function()
+    TeleportToBall()
+end)
+
+ServerTab:AddKeybind("Teleport to Ball Keybind", Config.TPBallKey, function()
+    TeleportToBall()
+end)
+
+ServerTab:AddButton("Teleport to Enemy Goal", "Enemy Goal", function()
+    TeleportToGoal()
+end)
+
+ServerTab:AddKeybind("Teleport to Goal Keybind", Config.TPGoalKey, function()
+    TeleportToGoal()
+end)
+
+ServerTab:AddButton("Teleport to Pitch Center", "Midfield", function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)
+        Notify("Teleport", "Teleported to Midfield!", 1.5, "⚡")
+    end
+end)
+
+ServerTab:AddSection("Server Hopping")
+ServerTab:AddButton("Hop New Active Server", "Server Hop", function()
+    Notify("Server Hop", "Searching for active server...", 3, "🌐")
+    ServerHop(false)
+end)
+
+ServerTab:AddButton("Hop Low Population Server", "Low Pop Hop", function()
+    Notify("Server Hop", "Searching for low player server...", 3, "🌐")
+    ServerHop(true)
+end)
+
+ServerTab:AddButton("Rejoin Current Server", "Rejoin", function()
+    Notify("Rejoining", "Reconnecting to server...", 3, "🌐")
+    RejoinServer()
+end)
+
+ServerTab:AddSection("Menu & Keybinds")
+ServerTab:AddKeybind("Toggle UI Keybind", Config.ToggleUIKey, function(key)
+    Config.ToggleUIKey = key
+    Notify("UI Keybind", "Toggle key set to: " .. key.Name, 2, "⌨️")
+end)
+
+ServerTab:AddSection("Mobile & Performance")
+ServerTab:AddToggle("Mobile Quick Touch Action Pad", Config.MobileMode, function(v)
+    Config.MobileMode = v
+    if MobilePadFrame then MobilePadFrame.Visible = v end
+    Notify("Mobile Pad", v and "Quick Touch Pad enabled!" or "Quick Touch Pad hidden.", 2, "📱")
+end)
+
+ServerTab:AddToggle("Low-Lag Mode (Reduce ESP CPU Load)", Config.LowLagMode, function(v)
+    Config.LowLagMode = v
+    Notify("Low-Lag Mode", v and "Enabled: CPU & rendering optimized for high FPS!" or "Disabled", 2, "⚡")
+end)
+
+ServerTab:AddSection("Safety")
+ServerTab:AddToggle("Staff & Admin Alert", Config.StaffDetector, function(v)
+    Config.StaffDetector = v
+end)
+
+ServerTab:AddToggle("Auto-Leave on Staff Join", Config.AutoLeaveOnStaff, function(v)
+    Config.AutoLeaveOnStaff = v
+end)
+
+ServerTab:AddSection("👥 Team Auto-Join & Match")
+ServerTab:AddToggle("Auto-Join Match Team", Config.AutoJoinTeam, function(v)
+    Config.AutoJoinTeam = v
+    if v then ExecuteAutoJoinTeam(false) end
+end)
+
+ServerTab:AddDropdown("Preferred Team", {"Auto (Any Open)", "Home", "Away"}, Config.TargetTeam, function(v)
+    Config.TargetTeam = v
+end)
+
+ServerTab:AddDropdown("Preferred Role / Position", {"CF", "LW", "RW", "CM", "GK", "Any Open Role"}, Config.TargetRole, function(v)
+    Config.TargetRole = v
+end)
+
+ServerTab:AddButton("Instant Join Match Team", "Join Now", function()
+    ExecuteAutoJoinTeam(true)
+end)
+
+ServerTab:AddSection("💾 Configuration Profile")
+ServerTab:AddToggle("Auto-Save Changes (Real-Time)", Config.AutoSave, function(v)
+    Config.AutoSave = v
+end)
+
+ServerTab:AddButton("Save Current Settings", "Save Config", function()
+    SaveConfig(false)
+end)
+
+ServerTab:AddButton("Load Saved Settings", "Load Config", function()
+    LoadConfig(false)
+end)
+
+-- ==============================================================================
+--                                CYBER HUD WIDGET
+-- ==============================================================================
+local HUDFrame = Instance.new("Frame")
+HUDFrame.Name = "CyberMetavisionHUD"
+HUDFrame.Size = UDim2.new(0, 260, 0, 100)
+HUDFrame.Position = UDim2.new(0.5, -130, 0, 12)
+HUDFrame.BackgroundColor3 = Color3.fromRGB(12, 16, 25)
+HUDFrame.BackgroundTransparency = 0.18
+HUDFrame.BorderSizePixel = 0
+HUDFrame.Visible = Config.CyberHUD
+HUDFrame.ZIndex = 80
+HUDFrame.Parent = ScreenGui
+
+local HUDCorner = Instance.new("UICorner")
+HUDCorner.CornerRadius = UDim.new(0, 10)
+HUDCorner.Parent = HUDFrame
+
+local HUDStroke = Instance.new("UIStroke")
+HUDStroke.Color = Color3.fromRGB(255, 182, 205)
+HUDStroke.Thickness = 1.2
+HUDStroke.Transparency = 0.3
+HUDStroke.Parent = HUDFrame
+
+local HUDTitle = Instance.new("TextLabel")
+HUDTitle.Size = UDim2.new(1, -16, 0, 20)
+HUDTitle.Position = UDim2.new(0, 8, 0, 4)
+HUDTitle.BackgroundTransparency = 1
+HUDTitle.Text = "👁️ METAVISION HUD | LIVE"
+HUDTitle.TextColor3 = Color3.fromRGB(255, 182, 205)
+HUDTitle.Font = Enum.Font.GothamBold
+HUDTitle.TextSize = 10
+HUDTitle.TextXAlignment = Enum.TextXAlignment.Left
+HUDTitle.ZIndex = 81
+HUDTitle.Parent = HUDFrame
+
+local HUDBallSpeed = Instance.new("TextLabel")
+HUDBallSpeed.Size = UDim2.new(0.5, -10, 0, 18)
+HUDBallSpeed.Position = UDim2.new(0, 8, 0, 26)
+HUDBallSpeed.BackgroundTransparency = 1
+HUDBallSpeed.Text = "Ball Spd: 0 km/h"
+HUDBallSpeed.TextColor3 = Color3.fromRGB(0, 220, 255)
+HUDBallSpeed.Font = Enum.Font.GothamMedium
+HUDBallSpeed.TextSize = 10
+HUDBallSpeed.TextXAlignment = Enum.TextXAlignment.Left
+HUDBallSpeed.ZIndex = 81
+HUDBallSpeed.Parent = HUDFrame
+
+local HUDGoalDist = Instance.new("TextLabel")
+HUDGoalDist.Size = UDim2.new(0.5, -10, 0, 18)
+HUDGoalDist.Position = UDim2.new(0.5, 2, 0, 26)
+HUDGoalDist.BackgroundTransparency = 1
+HUDGoalDist.Text = "Goal Dist: 0m"
+HUDGoalDist.TextColor3 = Color3.fromRGB(0, 255, 170)
+HUDGoalDist.Font = Enum.Font.GothamMedium
+HUDGoalDist.TextSize = 10
+HUDGoalDist.TextXAlignment = Enum.TextXAlignment.Left
+HUDGoalDist.ZIndex = 81
+HUDGoalDist.Parent = HUDFrame
+
+local HUDFlowMeter = Instance.new("TextLabel")
+HUDFlowMeter.Size = UDim2.new(0.5, -10, 0, 18)
+HUDFlowMeter.Position = UDim2.new(0, 8, 0, 46)
+HUDFlowMeter.BackgroundTransparency = 1
+HUDFlowMeter.Text = "Flow: 0%"
+HUDFlowMeter.TextColor3 = Color3.fromRGB(255, 200, 50)
+HUDFlowMeter.Font = Enum.Font.GothamMedium
+HUDFlowMeter.TextSize = 10
+HUDFlowMeter.TextXAlignment = Enum.TextXAlignment.Left
+HUDFlowMeter.ZIndex = 81
+HUDFlowMeter.Parent = HUDFrame
+
+local HUDFarmStats = Instance.new("TextLabel")
+HUDFarmStats.Size = UDim2.new(0.5, -10, 0, 18)
+HUDFarmStats.Position = UDim2.new(0.5, 2, 0, 46)
+HUDFarmStats.BackgroundTransparency = 1
+HUDFarmStats.Text = "Session: 0 Goals"
+HUDFarmStats.TextColor3 = Color3.fromRGB(255, 150, 200)
+HUDFarmStats.Font = Enum.Font.GothamMedium
+HUDFarmStats.TextSize = 10
+HUDFarmStats.TextXAlignment = Enum.TextXAlignment.Left
+HUDFarmStats.ZIndex = 81
+HUDFarmStats.Parent = HUDFrame
+
+local HUDGaugeTrack = Instance.new("Frame")
+HUDGaugeTrack.Size = UDim2.new(1, -16, 0, 4)
+HUDGaugeTrack.Position = UDim2.new(0, 8, 0, 72)
+HUDGaugeTrack.BackgroundColor3 = Color3.fromRGB(25, 34, 50)
+HUDGaugeTrack.BorderSizePixel = 0
+HUDGaugeTrack.ZIndex = 81
+HUDGaugeTrack.Parent = HUDFrame
+
+local HUDGaugeTrackCorner = Instance.new("UICorner")
+HUDGaugeTrackCorner.CornerRadius = UDim.new(1, 0)
+HUDGaugeTrackCorner.Parent = HUDGaugeTrack
+
+local HUDGaugeFill = Instance.new("Frame")
+HUDGaugeFill.Size = UDim2.new(0, 0, 1, 0)
+HUDGaugeFill.BackgroundColor3 = Color3.fromRGB(0, 230, 255)
+HUDGaugeFill.BorderSizePixel = 0
+HUDGaugeFill.ZIndex = 82
+HUDGaugeFill.Parent = HUDGaugeTrack
+
+local HUDGaugeFillCorner = Instance.new("UICorner")
+HUDGaugeFillCorner.CornerRadius = UDim.new(1, 0)
+HUDGaugeFillCorner.Parent = HUDGaugeFill
+
+local hudDrag, hudDragInput, hudDragStart, hudStartPos
+HUDFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        hudDrag = true
+        hudDragStart = input.Position
+        hudStartPos = HUDFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                hudDrag = false
+            end
+        end)
+    end
+end)
+
+HUDFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        hudDragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == hudDragInput and hudDrag then
+        local delta = input.Position - hudDragStart
+        HUDFrame.Position = UDim2.new(hudStartPos.X.Scale, hudStartPos.X.Offset + delta.X, hudStartPos.Y.Scale, hudStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(0.15)
+        pcall(function()
+            HUDFrame.Visible = Config.CyberHUD
+            if not Config.CyberHUD then return end
+            
+            local ball = GetBall()
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            
+            if ball and ball:IsA("BasePart") then
+                local spd = math.floor(ball.AssemblyLinearVelocity.Magnitude * 2.8)
+                HUDBallSpeed.Text = string.format("Ball Spd: %d km/h", spd)
+                local fillPct = math.clamp(spd / 200, 0, 1)
+                HUDGaugeFill.Size = UDim2.new(fillPct, 0, 1, 0)
+            else
+                HUDBallSpeed.Text = "Ball Spd: 0 km/h"
+                HUDGaugeFill.Size = UDim2.new(0, 0, 1, 0)
+            end
+
+            if hrp then
+                local goalPos = GetEnemyGoal()
+                local dist = math.floor((goalPos - hrp.Position).Magnitude)
+                HUDGoalDist.Text = string.format("Goal Dist: %dm", dist)
+            end
+
+            local awkBar = LocalPlayer.PlayerGui:FindFirstChild("AwakeningBar")
+            if awkBar and awkBar.Enabled then
+                HUDFlowMeter.Text = "Flow: Active / Ready"
+            else
+                HUDFlowMeter.Text = "Flow: Charging"
+            end
+
+            HUDFarmStats.Text = string.format("Goals: %d | Saves: %d", SessionStats.GoalsScored, SessionStats.SavesMade)
+        end)
+    end
+end)
+
+-- ==============================================================================
+--                                CORE AUTOMATION
+-- ==============================================================================
+
+pcall(function()
+    if hookmetamethod and getnamecallmethod then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if not checkcaller() and (method == "FireServer" or method == "InvokeServer") then
+                local remoteName = tostring(self.Name)
+                if remoteName == "ShootBall" or remoteName == "ShootBallForce" or remoteName == "CurvedShot" then
+                    if Config.SilentAim or Config.AutoGoal then
+                        local char = LocalPlayer.Character
+                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local goalPos = GetEnemyGoal()
+                            local rawPower = args[2] or 100
+                            local speed = Config.MaxShotPower and Config.ShotPower or rawPower
+                            local shootDir = CalculateBallisticVector(hrp.Position, goalPos, speed)
+                            
+                            lastShotTick = tick()
+                            args[1] = shootDir
+                            if args[2] ~= nil then args[2] = 100 end
+                            
+                            BoostBallRocket(goalPos, speed)
+                            return oldNamecall(self, table.unpack(args))
+                        end
+                    end
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+    end
+end)
+
+pcall(function()
+    local events = ReplicatedStorage:FindFirstChild("Events")
+    if events then
+        local getLooking = events:FindFirstChild("GetLookingAtPlayer")
+        if getLooking and getLooking:IsA("BindableFunction") then
+            getLooking.OnInvoke = function()
+                if Config.SilentAim or Config.AutoGoal then
+                    return nil
+                end
+            end
+        end
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed or UserInputService:GetFocusedTextBox() then return end
+    if input.KeyCode == Config.InstantGoalKey then
+        FireSuperShot()
+    elseif input.KeyCode == Config.FakeShotKey then
+        ExecuteFakeShotFeint()
+    elseif input.KeyCode == Config.AutoPassKey then
+        ExecuteAutoPass()
+    elseif input.KeyCode == Config.DashBurstKey then
+        ExecuteDashBurst()
+    elseif input.KeyCode == Config.TPBallKey then
+        TeleportToBall()
+    elseif input.KeyCode == Config.TPGoalKey then
+        TeleportToGoal()
+    elseif input.KeyCode == Config.ToggleUIKey then
+        ToggleGUI()
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char and Config.HitboxExpander then
+            local headerHitbox = char:FindFirstChild("HeaderHitbox") or char:FindFirstChild("Hitbox")
+            if headerHitbox and headerHitbox:IsA("BasePart") then
+                headerHitbox.Size = Vector3.new(Config.HitboxSize, Config.HitboxSize, Config.HitboxSize)
+                headerHitbox.Transparency = Config.HitboxVisible and 0.82 or 1
+                headerHitbox.CanCollide = false
+                headerHitbox.Massless = true
+            end
+        end
+    end)
+end)
+
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(0.08)
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char then
+                if Config.AntiRagdoll then
+                    char:SetAttribute("Ragdoll", false)
+                    if char:FindFirstChild("IsRagdoll") then char.IsRagdoll.Value = false end
+                end
+                if Config.AntiStun then
+                    char:SetAttribute("Stunned", false)
+                    char:SetAttribute("CantBall", false)
+                end
+            end
+        end)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum then
+            if Config.SpeedBoost then hum.WalkSpeed = Config.WalkSpeed end
+            if Config.JumpPowerBoost then hum.JumpPower = Config.JumpPower end
+        end
+    end)
+end)
+
+RunService.Stepped:Connect(function()
+    if Config.Noclip and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+local flyBodyVel, flyBodyGyro
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        if Config.Fly then
+            if not flyBodyVel or flyBodyVel.Parent ~= hrp then
+                flyBodyVel = Instance.new("BodyVelocity")
+                flyBodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                flyBodyVel.Velocity = Vector3.new(0, 0, 0)
+                flyBodyVel.Parent = hrp
+
+                flyBodyGyro = Instance.new("BodyGyro")
+                flyBodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+                flyBodyGyro.P = 10000
+                flyBodyGyro.CFrame = hrp.CFrame
+                flyBodyGyro.Parent = hrp
+            end
+
+            local moveVec = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + Camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - Camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVec = moveVec - Vector3.new(0, 1, 0) end
+
+            flyBodyVel.Velocity = moveVec.Unit * Config.FlySpeed
+            if moveVec.Magnitude == 0 then flyBodyVel.Velocity = Vector3.new(0, 0, 0) end
+            flyBodyGyro.CFrame = Camera.CFrame
+        else
+            if flyBodyVel then flyBodyVel:Destroy() flyBodyVel = nil end
+            if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
+        end
+    end)
+end)
+
+-- ==============================================================================
+--              HYPER-SPEED AUTO TACKLE & AUTO DRIBBLE ENGINE (0ms)
+-- ==============================================================================
+local lastTackleTick = 0
+local lastDribbleTick = 0
+
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local myChar = LocalPlayer.Character
+        local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        local hum = myChar and myChar:FindFirstChild("Humanoid")
+        if not myHrp or not hum or hum.Health <= 0 then return end
+
+        local ball = GetBall()
+        local hasBall = myChar:GetAttribute("HasBall") == true or (ball and ball.Parent == myChar)
+        local now = tick()
+
+        -- 1. Hyper-Fast Instant 0ms Auto Tackle & Steal Lunge (Ultra-Speed)
+        if Config.AutoTackle and not hasBall and (now - lastTackleTick) >= 0.05 then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local isTargetEnemy = (not Config.AutoStealEnemiesOnly) or IsEnemy(plr)
+                    if isTargetEnemy then
+                        local enemyChar = plr.Character
+                        local enemyHrp = enemyChar.HumanoidRootPart
+                        local dist = (enemyHrp.Position - myHrp.Position).Magnitude
+                        
+                        local enemyHasBall = enemyChar:GetAttribute("HasBall") == true 
+                            or (ball and ball.Parent == enemyChar)
+                            or (ball and (ball.Position - enemyHrp.Position).Magnitude <= 8.5)
+                        
+                        if enemyHasBall and dist <= (Config.TackleDistance + 6) then
+                            lastTackleTick = now
+                            
+                            -- Non-blocking concurrent remote execution
+                            task.spawn(function()
+                                if Events and Events:FindFirstChild("SlideBegan") then
+                                    Events.SlideBegan:FireServer()
+                                end
+                                if Events and Events:FindFirstChild("StealBallSlide") then
+                                    pcall(function()
+                                        Events.StealBallSlide:InvokeServer(enemyChar)
+                                    end)
+                                end
+                            end)
+                            
+                            -- Optional Physical Slide Lunge Acceleration to close distance (Only when enabled)
+                            if Config.AutoStealTeleport then
+                                pcall(function()
+                                    local lungeDir = (enemyHrp.Position - myHrp.Position).Unit
+                                    if myHrp:FindFirstChild("StealLungeBV") then myHrp.StealLungeBV:Destroy() end
+                                    local lungeBV = Instance.new("BodyVelocity")
+                                    lungeBV.Name = "StealLungeBV"
+                                    lungeBV.MaxForce = Vector3.new(1e6, 0, 1e6)
+                                    lungeBV.Velocity = Vector3.new(lungeDir.X, 0, lungeDir.Z).Unit * 115
+                                    lungeBV.Parent = myHrp
+                                    task.delay(0.20, function()
+                                        if lungeBV and lungeBV.Parent then lungeBV:Destroy() end
+                                    end)
+                                end)
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
+        if (Config.AutoDribble or Config.SkillChaining) and hasBall and (now - lastDribbleTick) >= 0.52 then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local enemyChar = plr.Character
+                    local enemyHrp = enemyChar.HumanoidRootPart
+                    local dist = (enemyHrp.Position - myHrp.Position).Magnitude
+                    
+                    if dist <= 14 and (enemyChar:GetAttribute("Sliding") == true or enemyChar:GetAttribute("Tackling") == true or (enemyHrp.AssemblyLinearVelocity.Magnitude > 28 and dist <= 10)) then
+                        lastDribbleTick = now
+                        if Config.SkillChaining and Events and Events:FindFirstChild("RainbowFlick") then
+                            Events.RainbowFlick:FireServer(myHrp.CFrame.LookVector + Vector3.new(0, 1, 0))
+                        end
+                        if Events and Events:FindFirstChild("Dribble") then
+                            Events.Dribble:InvokeServer()
+                        end
+                        break
+                    end
+                end
+            end
+        end
+
+        if Config.AutoHeaderVolley and not hasBall and ball and ball.Parent == Workspace then
+            local dist = (ball.Position - myHrp.Position).Magnitude
+            if dist <= 15 and ball.Position.Y >= 4.2 and ball.Position.Y <= 17 then
+                if (now - lastShotTick) > 0.75 then
+                    hum.Jump = true
+                    FireSuperShot()
+                end
+            end
+        end
+
+        if Config.ReboundMagnet and not hasBall and ball and ball.Parent == Workspace then
+            local dist = (ball.Position - myHrp.Position).Magnitude
+            if dist <= 28 and ball.Position.Y <= 6.0 and ball.AssemblyLinearVelocity.Magnitude < 45 then
+                ball.AssemblyLinearVelocity = (myHrp.Position - ball.Position).Unit * 80
+                if dist <= 8.5 and Events and Events:FindFirstChild("SlideBegan") then
+                    Events.SlideBegan:FireServer()
+                end
+            end
+        end
+    end)
+end)
+
+-- Autonomous Goalkeeper Suite
+local lastGKDiveTick = 0
+local lastGKCounterTick = 0
+
+local function IsPlayerGK()
+    if not Config.AutoGKOnlyWhenGKRole then return true end
+    local role = LocalPlayer:FindFirstChild("Role")
+    if role and tostring(role.Value) == "GK" then return true end
+    
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local p1 = Vector3.new(-234.6, 6.0, 0)
+        local p2 = Vector3.new(235.0, 6.0, 0)
+        if (hrp.Position - p1).Magnitude <= 50 or (hrp.Position - p2).Magnitude <= 50 then
+            return true
+        end
+    end
+    return false
+end
+
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        if not Config.AutoGK and not Config.GodGK then return end
+        if not IsPlayerGK() then return end
+        
+        local myChar = LocalPlayer.Character
+        local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        local hum = myChar and myChar:FindFirstChild("Humanoid")
+        if not myHrp or not hum or hum.Health <= 0 then return end
+        
+        local hasBall = myChar:GetAttribute("HasBall") == true
+        local ball = GetBall()
+
+        if (Config.GKCounterAttack or Config.GKAutoCounterClear) and hasBall and (tick() - lastGKCounterTick) > 1.4 then
+            lastGKCounterTick = tick()
+            task.delay(0.4, function()
+                if myChar and myChar:GetAttribute("HasBall") == true then
+                    ExecuteAutoPass()
+                end
+            end)
+            return
+        end
+
+        if hasBall or not ball or not ball:IsA("BasePart") then return end
+        
+        local goalPos = GetMyProtectedGoal()
+        local ballPos = ball.Position
+        local ballVel = ball.AssemblyLinearVelocity or ball.Velocity
+        local ballSpeed = ballVel.Magnitude
+        local distToBall = (ballPos - myHrp.Position).Magnitude
+        local distToGoal = (myHrp.Position - goalPos).Magnitude
+        
+        local isHome = goalPos.X < 0
+        local goalLineX = isHome and -227.7 or 227.7
+        local standingX = isHome and -224.2 or 224.2
+        
+        if distToGoal < 48 and not myChar:GetAttribute("Ragdoll") then
+            local lookTarget = Vector3.new(ballPos.X, myHrp.Position.Y, ballPos.Z)
+            if (lookTarget - myHrp.Position).Magnitude > 2 then
+                myHrp.CFrame = CFrame.lookAt(myHrp.Position, lookTarget)
+            end
+        end
+
+        local isFastShotIncoming = false
+        local predictedHitPos = nil
+        
+        if Config.SuperhumanGKPredictor and math.abs(ballVel.X) > 8 then
+            local timeToGoal = (goalLineX - ballPos.X) / ballVel.X
+            if timeToGoal > 0 and timeToGoal <= 1.45 then
+                local predZ = ballPos.Z + (ballVel.Z * timeToGoal)
+                local predY = ballPos.Y + (ballVel.Y * timeToGoal)
+                if math.abs(predZ) <= 15.5 and predY >= 0 and predY <= 14.0 then
+                    isFastShotIncoming = true
+                    predictedHitPos = Vector3.new(goalLineX, math.clamp(predY, 2.0, 8.5), math.clamp(predZ, -13.0, 13.0))
+                end
+            end
+        end
+        
+        local isBallIncoming = isFastShotIncoming
+        if not isBallIncoming and ballSpeed > 8 then
+            local toGoal = (goalPos - ballPos).Unit
+            local velDir = ballVel.Unit
+            if velDir:Dot(toGoal) > 0.25 then
+                isBallIncoming = true
+            end
+        end
+        
+        local opponentThreat = false
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local opp = plr.Character
+                if opp:GetAttribute("HasBall") == true then
+                    local oppHrp = opp:FindFirstChild("HumanoidRootPart")
+                    if oppHrp and (oppHrp.Position - myHrp.Position).Magnitude <= (Config.AutoGKDistance + 8) then
+                        opponentThreat = true
+                    end
+                end
+            end
+        end
+        
+        if Config.AutoGKPositioning and distToGoal < 48 and not isFastShotIncoming and not myChar:GetAttribute("Ragdoll") then
+            local goalZClamp = math.clamp(ballPos.Z * 0.42, -11.5, 11.5)
+            local idealPos = Vector3.new(standingX, myHrp.Position.Y, goalZClamp)
+            if (idealPos - myHrp.Position).Magnitude > 1.8 and not (ballSpeed > 50 and distToBall < 30) then
+                hum:MoveTo(idealPos)
+            end
+        end
+        
+        local now = tick()
+        if (Config.AutoGKDive or Config.GodGK) and (isFastShotIncoming or (distToBall <= Config.AutoGKDistance and (isBallIncoming or opponentThreat or distToBall <= 22))) then
+            if (now - lastGKDiveTick) >= 0.42 then
+                local targetPoint = predictedHitPos or ballPos
+                local relVec = myHrp.CFrame:PointToObjectSpace(targetPoint)
+                local diveDir = "Forward"
+                
+                if relVec.X < -1.5 then
+                    diveDir = "Left"
+                elseif relVec.X > 1.5 then
+                    diveDir = "Right"
+                else
+                    diveDir = "Forward"
+                end
+                
+                lastGKDiveTick = now
+                SessionStats.SavesMade = SessionStats.SavesMade + 1
+
+                if Events and Events:FindFirstChild("GKDive") then
+                    Events.GKDive:FireServer(diveDir)
+                end
+                
+                local saveTarget = predictedHitPos or Vector3.new(standingX, math.clamp(ballPos.Y, 2.5, 7.5), math.clamp(ballPos.Z, -13.0, 13.0))
+                local diveDelta = (saveTarget - myHrp.Position)
+                local horizontalDelta = Vector3.new(diveDelta.X, 0, diveDelta.Z)
+                local diveDist = horizontalDelta.Magnitude
+                
+                if diveDist > 1.2 then
+                    local diveSpeed = math.clamp(diveDist * 4.5, 32, 60)
+                    local isHighShot = (targetPoint.Y >= 4.8) and Config.AntiChipSweeper
+                    
+                    if isHighShot then
+                        hum.Jump = true
+                    end
+                    
+                    if myHrp:FindFirstChild("GKDiveBV") then myHrp.GKDiveBV:Destroy() end
+                    local diveBV = Instance.new("BodyVelocity")
+                    diveBV.Name = "GKDiveBV"
+                    diveBV.MaxForce = Vector3.new(1e6, isHighShot and 1e6 or 0, 1e6)
+                    local yLift = isHighShot and math.clamp((targetPoint.Y - myHrp.Position.Y) * 6, 12, 28) or 0
+                    diveBV.Velocity = (horizontalDelta.Unit * diveSpeed) + Vector3.new(0, yLift, 0)
+                    diveBV.Parent = myHrp
+                    
+                    task.delay(0.32, function()
+                        if diveBV and diveBV.Parent then diveBV:Destroy() end
+                    end)
+                end
+                
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= LocalPlayer and IsEnemy(plr) and plr.Character and plr.Character:GetAttribute("HasBall") == true then
+                        if Events and Events:FindFirstChild("StealBallSlide") then
+                            Events.StealBallSlide:InvokeServer(plr.Character)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+-- Ball Physics, Orbital Shield & Air Juggle Render Loop
+local orbitAngle = 0
+local juggleWave = 0
+
+RunService.RenderStepped:Connect(function(dt)
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local ball = GetBall()
+        if not ball or not ball:IsA("BasePart") then return end
+        
+        if ball.Position.Y < 1.2 then
+            ball.Position = Vector3.new(ball.Position.X, 2.5, ball.Position.Z)
+            ball.AssemblyLinearVelocity = Vector3.new(ball.AssemblyLinearVelocity.X, math.max(0, ball.AssemblyLinearVelocity.Y), ball.AssemblyLinearVelocity.Z)
+        end
+        
+        local hasBall = char:GetAttribute("HasBall") == true or ball.Parent == char
+        
+        if (tick() - lastShotTick) < 2.0 then
+            return
+        end
+        
+        if Config.AirJuggle and hasBall and ball.Parent == Workspace and not ball:IsDescendantOf(char) then
+            juggleWave = (juggleWave + dt * 7) % (math.pi * 2)
+            local waveY = math.sin(juggleWave) * 0.4
+            local targetPos = hrp.Position + Vector3.new(0, (Config.AirJuggleHeight or 7.5) + waveY, 0) + (hrp.CFrame.LookVector * 1.5)
+            local diff = (targetPos - ball.Position)
+            ball.AssemblyLinearVelocity = diff * 22
+            return
+        end
+
+        if Config.BallOrbitalShield and hasBall and ball.Parent == Workspace and not ball:IsDescendantOf(char) then
+            orbitAngle = (orbitAngle + ((Config.BallOrbitSpeed or 6) * dt * 4)) % (math.pi * 2)
+            local radius = Config.BallOrbitRadius or 3.5
+            local offset = Vector3.new(math.cos(orbitAngle) * radius, 0.4, math.sin(orbitAngle) * radius)
+            local targetPos = hrp.Position + offset
+            ball.AssemblyLinearVelocity = (targetPos - ball.Position) * 25
+            return
+        end
+
+        if Config.BallTelekinesis and not hasBall then
+            local ray = Camera:ScreenPointToRay(Mouse.X, Mouse.Y)
+            local planeY = hrp.Position.Y
+            local t = (planeY - ray.Origin.Y) / ray.Direction.Y
+            local mouseWorldPos = ray.Origin + (ray.Direction * t)
+            
+            local diff = (mouseWorldPos - ball.Position)
+            if diff.Magnitude > 1.5 then
+                ball.AssemblyLinearVelocity = diff.Unit * math.clamp(diff.Magnitude * 7.5, 30, 160)
+            else
+                ball.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+            return
+        end
+        
+        if Config.BallControl and hasBall and ball.Parent == Workspace and not ball:IsDescendantOf(char) then
+            local lookVec = hrp.CFrame.LookVector
+            local rightVec = hrp.CFrame.RightVector
+            local targetOffset = lookVec * Config.BallGlueDistance
+            
+            if Config.AntiStealShield then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        local oppHrp = plr.Character.HumanoidRootPart
+                        local dist = (oppHrp.Position - hrp.Position).Magnitude
+                        if dist <= 12 then
+                            local oppRel = hrp.CFrame:PointToObjectSpace(oppHrp.Position)
+                            if oppRel.X > 0 then
+                                targetOffset = (lookVec * 2.2) - (rightVec * 2.6)
+                            else
+                                targetOffset = (lookVec * 2.2) + (rightVec * 2.6)
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+            
+            if Config.BallGlue then
+                local desiredPos = hrp.Position + targetOffset + Vector3.new(0, -1, 0)
+                local diff = desiredPos - ball.Position
+                if diff.Magnitude > 0.6 then
+                    ball.AssemblyLinearVelocity = diff * 16
+                end
+            end
+        end
+        
+        if Config.AutoClaimBall and not hasBall then
+            local dist = (ball.Position - hrp.Position).Magnitude
+            if dist <= 8.5 then
+                if Events and Events:FindFirstChild("SlideBegan") then
+                    Events.SlideBegan:FireServer()
+                end
+            end
+        end
+        
+        if Config.BallMagnet and not hasBall then
+            local dist = (ball.Position - hrp.Position).Magnitude
+            if dist <= Config.BallMagnetDistance then
+                ball.AssemblyLinearVelocity = (hrp.Position - ball.Position).Unit * 55
+            end
+        end
+    end)
+end)
+
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(0.02)
+        if Config.AutoMash or Config.AutoWinQTE then
+            pcall(function()
+                local mashGui = LocalPlayer.PlayerGui:FindFirstChild("MashGui") or LocalPlayer.PlayerGui:FindFirstChild("ClashGUI")
+                if mashGui and mashGui.Enabled then
+                    if Events and Events:FindFirstChild("Mash") then
+                        Events.Mash:FireServer()
+                    end
+                end
+                
+                local qteGui = LocalPlayer.PlayerGui:FindFirstChild("QuicktimeEvent") or LocalPlayer.PlayerGui:FindFirstChild("SharinganGUI")
+                if qteGui and qteGui.Enabled then
+                    if Events and Events:FindFirstChild("ShidouDJumpHitBall") then
+                        Events.ShidouDJumpHitBall:InvokeServer()
+                    end
+                    if Events and Events:FindFirstChild("GotBallShidou2") then
+                        Events.GotBallShidou2:FireServer()
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(0.5)
+        if Config.AutoAwakening then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and not char:GetAttribute("Awakened") then
+                    if Events and Events:FindFirstChild("UseAwakening") then
+                        Events.UseAwakening:FireServer()
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+local StaffGroups = {33959146, 16843477, 32607831}
+local function CheckStaff(player)
+    if not player or not player:IsA("Player") then return false end
+    local uid = player.UserId
+    if Admins then
+        for _, adminId in ipairs(Admins) do if uid == adminId then return true end end
+    end
+    if BanAdmins then
+        for _, bAdminId in ipairs(BanAdmins) do if uid == bAdminId then return true end end
+    end
+    for _, gid in ipairs(StaffGroups) do
+        local success, rank = pcall(function() return player:GetRankInGroup(gid) end)
+        if success and rank and rank >= 100 then
+            return true
+        end
+    end
+    return false
+end
+
+task.spawn(function()
+    task.wait(1)
+    if Config.StaffDetector then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and CheckStaff(plr) then
+                Notify("⚠️ STAFF IN SERVER", "Staff present: " .. plr.Name, 6, "🚨")
+                if Config.AutoLeaveOnStaff then
+                    LocalPlayer:Kick("Staff member present in server.")
+                end
+                break
+            end
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    if Config.StaffDetector and CheckStaff(player) then
+        Notify("⚠️ STAFF DETECTED", "Admin joined: " .. player.Name, 8, "🚨")
+        if Config.AutoLeaveOnStaff then
+            LocalPlayer:Kick("Staff member joined the server.")
+        end
+    end
+end)
+
+-- ==============================================================================
+--              METAVISION ESP STUDIO (PASS LANES & DANGER ZONES)
+-- ==============================================================================
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "BlueLockMetavisionESP"
+ESPFolder.Parent = ScreenGui
+
+local ballBillboard = Instance.new("BillboardGui")
+ballBillboard.Size = UDim2.new(0, 120, 0, 36)
+ballBillboard.AlwaysOnTop = true
+ballBillboard.Enabled = false
+ballBillboard.Parent = ESPFolder
+
+local ballLabel = Instance.new("TextLabel")
+ballLabel.Size = UDim2.new(1, 0, 1, 0)
+ballLabel.BackgroundTransparency = 1
+ballLabel.Text = "⚽ BALL"
+ballLabel.TextColor3 = Color3.fromRGB(0, 240, 255)
+ballLabel.Font = Enum.Font.GothamBold
+ballLabel.TextSize = 13
+ballLabel.Parent = ballBillboard
+
+local ballHighlight = Instance.new("Highlight")
+ballHighlight.FillColor = Color3.fromRGB(0, 220, 255)
+ballHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+ballHighlight.FillTransparency = 0.4
+ballHighlight.Parent = ESPFolder
+
+local TrajectoryBeam = Instance.new("Beam")
+local BeamAtt0 = Instance.new("Attachment", Workspace.Terrain)
+local BeamAtt1 = Instance.new("Attachment", Workspace.Terrain)
+TrajectoryBeam.Attachment0 = BeamAtt0
+TrajectoryBeam.Attachment1 = BeamAtt1
+TrajectoryBeam.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 215, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 182, 205)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 240, 255))
+})
+TrajectoryBeam.Width0 = 0.4
+TrajectoryBeam.Width1 = 0.15
+TrajectoryBeam.Transparency = NumberSequence.new(0.2)
+TrajectoryBeam.CurveSize0 = 3
+TrajectoryBeam.CurveSize1 = -3
+TrajectoryBeam.Enabled = false
+TrajectoryBeam.Parent = ESPFolder
+
+local passBeams = {}
+local dangerHighlights = {}
+
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local ball = GetBall()
+        local myChar = LocalPlayer.Character
+        local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        
+        if ball and Config.BallESP then
+            ballBillboard.Enabled = true
+            ballBillboard.Adornee = ball
+            ballHighlight.Adornee = ball
+            
+            local dist = myHrp and math.floor((ball.Position - myHrp.Position).Magnitude) or 0
+            ballLabel.Text = string.format("⚽ BALL [%dm]", dist)
+            
+            if Config.TrajectoryESP and myChar and myChar:GetAttribute("HasBall") == true then
+                local goalPos = GetEnemyGoal()
+                BeamAtt0.WorldPosition = ball.Position
+                BeamAtt1.WorldPosition = goalPos
+                TrajectoryBeam.Enabled = true
+            else
+                TrajectoryBeam.Enabled = false
+            end
+        else
+            ballBillboard.Enabled = false
+            ballHighlight.Adornee = nil
+            TrajectoryBeam.Enabled = false
+        end
+
+        if Config.PassLaneESP and myHrp then
+            local activePlrs = Players:GetPlayers()
+            for _, plr in ipairs(activePlrs) do
+                if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local isTeammate = IsTeammate(plr)
+                    if isTeammate then
+                        local tHrp = plr.Character.HumanoidRootPart
+                        local dist = (tHrp.Position - myHrp.Position).Magnitude
+                        
+                        if dist <= 180 then
+                            local beamData = passBeams[plr]
+                            if not beamData then
+                                local a0 = Instance.new("Attachment", Workspace.Terrain)
+                                local a1 = Instance.new("Attachment", Workspace.Terrain)
+                                local b = Instance.new("Beam")
+                                b.Attachment0 = a0
+                                b.Attachment1 = a1
+                                b.Width0 = 0.25
+                                b.Width1 = 0.25
+                                b.Transparency = NumberSequence.new(0.3)
+                                b.Parent = ESPFolder
+                                beamData = {Beam = b, Att0 = a0, Att1 = a1}
+                                passBeams[plr] = beamData
+                            end
+
+                            local isBlocked = false
+                            local pA = myHrp.Position
+                            local pB = tHrp.Position
+                            local seg = (pB - pA)
+                            local segLen = seg.Magnitude
+
+                            for _, enemy in ipairs(activePlrs) do
+                                if enemy ~= plr and enemy ~= LocalPlayer and IsEnemy(enemy) and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
+                                    local ePos = enemy.Character.HumanoidRootPart.Position
+                                    local tProj = math.clamp((ePos - pA):Dot(seg) / (segLen * segLen), 0, 1)
+                                    local closestPoint = pA + (seg * tProj)
+                                    if (ePos - closestPoint).Magnitude < 9.0 then
+                                        isBlocked = true
+                                        break
+                                    end
+                                end
+                            end
+
+                            beamData.Att0.WorldPosition = myHrp.Position + Vector3.new(0, 0.5, 0)
+                            beamData.Att1.WorldPosition = tHrp.Position + Vector3.new(0, 0.5, 0)
+                            beamData.Beam.Color = isBlocked 
+                                and ColorSequence.new(Color3.fromRGB(255, 60, 80)) 
+                                or ColorSequence.new(Color3.fromRGB(0, 255, 140))
+                            beamData.Beam.Enabled = true
+                        elseif passBeams[plr] then
+                            passBeams[plr].Beam.Enabled = false
+                        end
+                    elseif passBeams[plr] then
+                        passBeams[plr].Beam.Enabled = false
+                    end
+                elseif passBeams[plr] then
+                    passBeams[plr].Beam.Enabled = false
+                end
+            end
+        else
+            for _, b in pairs(passBeams) do b.Beam.Enabled = false end
+        end
+
+        if Config.TackleDangerZoneESP and myHrp then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and IsEnemy(plr) and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local eChar = plr.Character
+                    local eHrp = eChar.HumanoidRootPart
+                    local dist = (eHrp.Position - myHrp.Position).Magnitude
+                    
+                    if dist <= 60 then
+                        local hl = dangerHighlights[plr]
+                        if not hl then
+                            hl = Instance.new("Highlight")
+                            hl.FillTransparency = 0.55
+                            hl.OutlineTransparency = 0.2
+                            hl.Parent = ESPFolder
+                            dangerHighlights[plr] = hl
+                        end
+
+                        local isThreat = eChar:GetAttribute("Sliding") == true or eHrp.AssemblyLinearVelocity.Magnitude > 26
+                        hl.Adornee = eChar
+                        hl.FillColor = isThreat and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(255, 140, 30)
+                        hl.OutlineColor = isThreat and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 180, 50)
+                        hl.Enabled = true
+                    elseif dangerHighlights[plr] then
+                        dangerHighlights[plr].Enabled = false
+                    end
+                elseif dangerHighlights[plr] then
+                    dangerHighlights[plr].Enabled = false
+                end
+            end
+        else
+            for _, hl in pairs(dangerHighlights) do hl.Enabled = false end
+        end
+    end)
+end)
+
+task.spawn(function()
+    while IsSessionActive() do
+        task.wait(1.5)
+        pcall(function()
+            if Config.AutoJoinTeam then
+                local currentTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+                if not currentTeam or currentTeam == "Lobby" or currentTeam == "None" then
+                    ExecuteAutoJoinTeam(false)
+                end
+            end
+        end)
+    end
+end)
+
+print("🌙 [LUNAR HUB] Columbina Edition v7.0 Supreme Loaded Successfully!")
+Notify("🌙 LUNAR HUB v7.0", "Supreme Edition Loaded! All features active.", 2.5, "🕊️")
