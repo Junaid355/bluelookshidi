@@ -852,6 +852,77 @@ local function ExecuteKaiserImpact()
     end)
 end
 
+local function ExecuteChigiriPantherSnipe()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local distToBall = (ball.Position - hrp.Position).Magnitude
+        local hasBall = char:GetAttribute("HasBall") == true or (ball.Parent == char) or distToBall <= 8.5
+        if not hasBall then
+            Notify("Notice", "Need ball to fire Panther Snipe!", 1.2, "⚠️")
+            return
+        end
+        
+        local goalPos = GetEnemyGoal()
+        local sideOffset = (goalPos.X > 0 and 1 or -1) * 12
+        local targetCorner = goalPos + Vector3.new(0, 6.2, sideOffset)
+        local strikeDir = (targetCorner - hrp.Position).Unit
+        
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(strikeDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(strikeDir, 100) end)
+        end
+        
+        BoostBallRocket(targetCorner, 280)
+        PlaySound("rbxassetid://6895079853", 1.4)
+        Notify("🐆 PANTHER SNIPE", "44° Golden Curve unleashed into top corner!", 1.6, "🐆")
+    end)
+end
+
+local function ExecuteShidouDragonDrive()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local distToBall = (ball.Position - hrp.Position).Magnitude
+        local hasBall = char:GetAttribute("HasBall") == true or (ball.Parent == char) or distToBall <= 8.5
+        if not hasBall then
+            Notify("Notice", "Need ball to fire Dragon Drive!", 1.2, "⚠️")
+            return
+        end
+        
+        local goalPos = GetEnemyGoal()
+        local targetCorner = goalPos + Vector3.new(0, 7.0, (math.random() > 0.5 and 11 or -11))
+        local strikeDir = (targetCorner - hrp.Position).Unit
+        
+        if hum then hum.Jump = true end
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(strikeDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(strikeDir, 100) end)
+        end
+        
+        BoostBallRocket(targetCorner, 300)
+        PlaySound("rbxassetid://6895079853", 1.5)
+        Notify("🐉 DRAGON DRIVE", "Extreme spatial overhead volley struck!", 1.6, "🐉")
+    end)
+end
+
 local function ApplyPlaystylePreset(presetName)
     Config.PlaystyleMode = presetName
     if presetName == "Undercover Legit (100% Undetectable)" or presetName == "Undercover Legit" then
@@ -1189,7 +1260,7 @@ local function GetBestTeammatePassTarget()
             local isKnocked = tChar:GetAttribute("Ragdoll") == true or tChar:GetAttribute("Sliding") == true or (hum and hum.Health <= 0)
             if onPitch and isLegitTeam and not isKnocked then
                 local distToMe = (tHrp.Position - myHrp.Position).Magnitude
-                if distToMe >= 8 and distToMe <= 220 then
+                if distToMe >= 6 and distToMe <= 600 then
                     local distToGoal = (tHrp.Position - enemyGoal).Magnitude
                     local forwardScore = 320 - distToGoal
                     
@@ -2926,13 +2997,31 @@ GodmodeTab:AddToggle("🛡️ Protect Enemy GK in Goal Area", Config.ProtectEnem
     Notify("GK Box Protection", v and "ON: Auto-Steal ignores enemy GK in goal area" or "OFF", 1.5, "🛡️")
 end)
 
-GodmodeTab:AddSection("⚡ Supreme OP Exploits (☢️ High Power / Rage)")
+GodmodeTab:AddSection("⚡ Supreme OP Weapons & Egoist Moves (☢️ High Power)")
 GodmodeTab:AddButton("⚡ ☢️ Fire Kaiser Impact Strike", "Fire Hypersonic", function()
     ExecuteKaiserImpact()
 end)
 
 GodmodeTab:AddKeybind("Kaiser Impact Hotkey", Config.KaiserImpactKey, function()
     ExecuteKaiserImpact()
+end)
+
+GodmodeTab:AddButton("🐆 ☢️ Fire Panther 44° Snipe", "Fire Panther", function()
+    ExecuteChigiriPantherSnipe()
+end)
+
+GodmodeTab:AddButton("🐉 ☢️ Fire Dragon Drive Volley", "Fire Dragon", function()
+    ExecuteShidouDragonDrive()
+end)
+
+GodmodeTab:AddToggle("🌌 🛡️ Nagi Black Hole Trap (Zero Rebound)", Config.NagiBlackHoleTrap, function(v)
+    Config.NagiBlackHoleTrap = v
+    Notify("Black Hole Trap", v and "ON: Kills ball velocity and anchors to feet!" or "OFF", 1.5, "🌌")
+end)
+
+GodmodeTab:AddToggle("🛡️ 🛡️ 360° Anti-Steal Body Shield", Config.AntiStealBodyShield, function(v)
+    Config.AntiStealBodyShield = v
+    Notify("Body Shield", v and "ON: Auto-shields ball from approaching tackles" or "OFF", 1.5, "🛡️")
 end)
 
 GodmodeTab:AddToggle("🛑 ☢️ Anti-Awakening Interrupter (Stop Move)", Config.AntiAwakeningInterrupter, function(v)
@@ -4171,18 +4260,38 @@ RunService.Heartbeat:Connect(function()
         if not myHrp or not hum or hum.Health <= 0 then return end
         
         local ball = GetBall()
-        local distToBall = (ball and myHrp) and (ball.Position - myHrp.Position).Magnitude or 999
-        local hasBall = myChar:GetAttribute("HasBall") == true or (ball and ball.Parent == myChar) or distToBall <= 7.5
+        local hasBall = myChar:GetAttribute("HasBall") == true or (ball and ball.Parent == myChar) or myChar:FindFirstChild("WeldBall") ~= nil
 
+        -- If GK has true possession, trigger smart pass counter-attack
         if (Config.GKCounterAttack or Config.GKAutoCounterClear) and hasBall and (tick() - lastGKCounterTick) > 1.2 then
             lastGKCounterTick = tick()
-            task.delay(0.18, function()
+            task.delay(0.20, function()
                 ExecuteAutoPass()
             end)
             return
         end
 
         if hasBall or not ball or not ball:IsA("BasePart") then return end
+        
+        -- If loose ball is near GK, actively scoop/claim the ball
+        local distToBall = (ball.Position - myHrp.Position).Magnitude
+        if distToBall <= 16 and ball.Parent == Workspace and (tick() - lastPassTick) >= 1.4 then
+            pcall(function()
+                local pullTarget = myHrp.Position + (myHrp.CFrame.LookVector * 1.5) + Vector3.new(0, -0.6, 0)
+                ball.AssemblyLinearVelocity = (pullTarget - ball.Position).Unit * 55
+                if firetouchinterest then
+                    firetouchinterest(ball, myHrp, 0)
+                    task.wait()
+                    firetouchinterest(ball, myHrp, 1)
+                    local headBox = myChar:FindFirstChild("HeaderHitbox")
+                    if headBox then
+                        firetouchinterest(ball, headBox, 0)
+                        task.wait()
+                        firetouchinterest(ball, headBox, 1)
+                    end
+                end
+            end)
+        end
         
         local goalPos = GetMyProtectedGoal()
         local ballPos = ball.Position
@@ -4382,17 +4491,17 @@ RunService.RenderStepped:Connect(function(dt)
             local rightVec = hrp.CFrame.RightVector
             local targetOffset = lookVec * Config.BallGlueDistance
             
-            if Config.AntiStealShield then
+            if Config.AntiStealBodyShield or Config.AntiStealShield then
                 for _, plr in ipairs(Players:GetPlayers()) do
-                    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and IsEnemy(plr) then
                         local oppHrp = plr.Character.HumanoidRootPart
                         local dist = (oppHrp.Position - hrp.Position).Magnitude
-                        if dist <= 12 then
+                        if dist <= 14 then
                             local oppRel = hrp.CFrame:PointToObjectSpace(oppHrp.Position)
                             if oppRel.X > 0 then
-                                targetOffset = (lookVec * 2.2) - (rightVec * 2.6)
+                                targetOffset = (lookVec * 2.2) - (rightVec * 2.8)
                             else
-                                targetOffset = (lookVec * 2.2) + (rightVec * 2.6)
+                                targetOffset = (lookVec * 2.2) + (rightVec * 2.8)
                             end
                             break
                         end
@@ -4406,6 +4515,22 @@ RunService.RenderStepped:Connect(function(dt)
                 if diff.Magnitude > 0.6 then
                     ball.AssemblyLinearVelocity = diff * 16
                 end
+            end
+        end
+        
+        if Config.NagiBlackHoleTrap and not hasBall and ball.Parent == Workspace and (tick() - lastPassTick) >= 1.4 then
+            local dist = (ball.Position - hrp.Position).Magnitude
+            if dist <= 8.5 then
+                ball.AssemblyLinearVelocity = Vector3.zero
+                local trapPos = hrp.Position + (hrp.CFrame.LookVector * 1.4) + Vector3.new(0, -0.6, 0)
+                ball.Position = trapPos
+                pcall(function()
+                    if firetouchinterest then
+                        firetouchinterest(ball, hrp, 0)
+                        task.wait()
+                        firetouchinterest(ball, hrp, 1)
+                    end
+                end)
             end
         end
         
