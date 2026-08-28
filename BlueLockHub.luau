@@ -923,6 +923,150 @@ local function ExecuteShidouDragonDrive()
     end)
 end
 
+local function ExecuteIsagiDirectVolley()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local goalPos = GetEnemyGoal()
+        local distToBall = (ball.Position - hrp.Position).Magnitude
+        local hasBall = char:GetAttribute("HasBall") == true or (ball.Parent == char) or distToBall <= 9.0
+        if not hasBall then
+            Notify("Notice", "Get in range of the ball for Direct Volley!", 1.2, "⚠️")
+            return
+        end
+        
+        local cornerOffset = Vector3.new(0, 6.5, (math.random() > 0.5 and 9.5 or -9.5))
+        local targetPos = goalPos + cornerOffset
+        local volleyDir = (targetPos - hrp.Position).Unit
+        
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if hum then hum.Jump = true end
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(volleyDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(volleyDir, 100) end)
+        end
+        
+        BoostBallRocket(targetPos, 320)
+        PlaySound("rbxassetid://6895079853", 1.45)
+        Notify("👁️ DIRECT VOLLEY", "Isagi 0-touch direct volley struck into open net!", 1.6, "👁️")
+    end)
+end
+
+local function ExecuteRinDestructiveCurve()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local distToBall = (ball.Position - hrp.Position).Magnitude
+        local hasBall = char:GetAttribute("HasBall") == true or (ball.Parent == char) or distToBall <= 8.5
+        if not hasBall then
+            Notify("Notice", "Need ball to fire Destructive Curve!", 1.2, "⚠️")
+            return
+        end
+        
+        local goalPos = GetEnemyGoal()
+        local bendDirection = (goalPos.X > 0 and 1 or -1)
+        local targetSideNetting = goalPos + Vector3.new(0, 5.8, bendDirection * 11)
+        local strikeDir = (targetSideNetting - hrp.Position).Unit
+        
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(strikeDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(strikeDir, 100) end)
+        end
+        
+        -- Extreme 16-stud bending arc around GK gloves
+        task.spawn(function()
+            local startTime = tick()
+            while (tick() - startTime) < 1.4 do
+                pcall(function()
+                    local b = GetBall()
+                    if b and b:IsA("BasePart") then
+                        local elapsed = tick() - startTime
+                        local curveWave = math.sin(elapsed * 9) * 0.08 * bendDirection
+                        local currentDir = (targetSideNetting - b.Position).Unit
+                        b.AssemblyLinearVelocity = Vector3.new(currentDir.X, currentDir.Y, currentDir.Z + curveWave).Unit * 290
+                    end
+                end)
+                task.wait(0.015)
+            end
+        end)
+        
+        PlaySound("rbxassetid://6895079853", 1.4)
+        Notify("👹 DESTRUCTIVE CURVE", "Rin's impossible bending arc curved into side netting!", 1.6, "👹")
+    end)
+end
+
+local function ExecuteBarouChopDribble()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp then return end
+        
+        local rightSide = math.random() > 0.5 and 1 or -1
+        local chopOffset = (hrp.CFrame.RightVector * (rightSide * 8.5)) + (hrp.CFrame.LookVector * 4.0)
+        
+        hrp.CFrame = hrp.CFrame + chopOffset
+        if ball and (ball.Parent == char or (ball.Position - hrp.Position).Magnitude <= 10) then
+            ball.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * 1.5)
+            ball.AssemblyLinearVelocity = hrp.CFrame.LookVector * 25
+        end
+        
+        if Events and Events:FindFirstChild("Dribble") then
+            pcall(function() Events.Dribble:InvokeServer() end)
+        end
+        if Events and Events:FindFirstChild("SlideBegan") then
+            Events.SlideBegan:FireServer()
+        end
+        
+        PlaySound("rbxassetid://6895079853", 1.3)
+        Notify("🦁 KING'S CHOP", "90° Chop cut broke opponent ankles!", 1.4, "🦁")
+    end)
+end
+
+local function ExecuteSilentKickoffGoal()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local goalPos = GetEnemyGoal()
+        local highLobTarget = goalPos + Vector3.new(0, 7.5, 0)
+        local lobDir = (highLobTarget - hrp.Position).Unit
+        local highAngleDir = Vector3.new(lobDir.X, 0.38, lobDir.Z).Unit
+        
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(highAngleDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(highAngleDir, 100) end)
+        end
+        
+        BoostBallRocket(highLobTarget, 260)
+        PlaySound("rbxassetid://6895079853", 1.5)
+        Notify("🎯 SILENT KICKOFF GOAL", "High-altitude lob fired straight from kickoff into the net!", 1.8, "🎯")
+    end)
+end
+
 local function ApplyPlaystylePreset(presetName)
     Config.PlaystyleMode = presetName
     if presetName == "Undercover Legit (100% Undetectable)" or presetName == "Undercover Legit" then
@@ -3006,12 +3150,28 @@ GodmodeTab:AddKeybind("Kaiser Impact Hotkey", Config.KaiserImpactKey, function()
     ExecuteKaiserImpact()
 end)
 
+GodmodeTab:AddButton("👁️ ☢️ Fire Isagi Direct Volley", "Fire Volley", function()
+    ExecuteIsagiDirectVolley()
+end)
+
+GodmodeTab:AddButton("👹 ☢️ Fire Rin Destructive Curve", "Fire Curve", function()
+    ExecuteRinDestructiveCurve()
+end)
+
 GodmodeTab:AddButton("🐆 ☢️ Fire Panther 44° Snipe", "Fire Panther", function()
     ExecuteChigiriPantherSnipe()
 end)
 
 GodmodeTab:AddButton("🐉 ☢️ Fire Dragon Drive Volley", "Fire Dragon", function()
     ExecuteShidouDragonDrive()
+end)
+
+GodmodeTab:AddButton("🦁 🛡️ King's 90° Chop Dribble", "Execute Chop", function()
+    ExecuteBarouChopDribble()
+end)
+
+GodmodeTab:AddButton("🎯 ☢️ Fire Silent Kickoff Goal", "Fire Kickoff", function()
+    ExecuteSilentKickoffGoal()
 end)
 
 GodmodeTab:AddToggle("🌌 🛡️ Nagi Black Hole Trap (Zero Rebound)", Config.NagiBlackHoleTrap, function(v)
@@ -3955,6 +4115,14 @@ UserInputService.InputBegan:Connect(function(input, processed)
         FireSuperShot()
     elseif input.KeyCode == Config.KaiserImpactKey then
         ExecuteKaiserImpact()
+    elseif input.KeyCode == (Config.IsagiVolleyKey or Enum.KeyCode.B) then
+        ExecuteIsagiDirectVolley()
+    elseif input.KeyCode == (Config.RinCurveKey or Enum.KeyCode.Y) then
+        ExecuteRinDestructiveCurve()
+    elseif input.KeyCode == (Config.BarouChopKey or Enum.KeyCode.Z) then
+        ExecuteBarouChopDribble()
+    elseif input.KeyCode == (Config.KickoffGoalKey or Enum.KeyCode.L) then
+        ExecuteSilentKickoffGoal()
     elseif input.KeyCode == Config.FakeShotKey then
         ExecuteFakeShotFeint()
     elseif input.KeyCode == Config.AutoPassKey then
