@@ -1457,8 +1457,24 @@ local function TeleportToBall()
         local ball = GetBall()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if ball and hrp then
+        if not hrp then return end
+        
+        if not ball then
+            Notify("Notice", "Ball not found in game!", 1.2, "⚽")
+            return
+        end
+        
+        local bPos = ball.Position
+        local isOutOfBounds = (bPos.X ~= bPos.X) or (bPos.Y ~= bPos.Y) or (bPos.Z ~= bPos.Z) or math.abs(bPos.X) > 240 or math.abs(bPos.Z) > 135 or bPos.Y < 1.0 or bPos.Y > 50.0
+        if isOutOfBounds then
+            ball.AssemblyLinearVelocity = Vector3.zero
+            ball.AssemblyAngularVelocity = Vector3.zero
+            ball.CFrame = CFrame.new(0, 5, 0)
+            hrp.CFrame = CFrame.new(0, 8, 0)
+            Notify("🌊 Safe TP", "Ball was out of bounds — teleported with ball to center field!", 1.8, "⚽")
+        else
             hrp.CFrame = ball.CFrame + Vector3.new(0, 3.2, 0)
+            Notify("⚡ Teleport", "Teleported directly to ball!", 1.2, "⚡")
         end
     end)
 end
@@ -1469,7 +1485,8 @@ local function TeleportToGoal()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
-            hrp.CFrame = CFrame.new(goalPos)
+            hrp.CFrame = CFrame.new(goalPos + Vector3.new(0, 4.0, 0))
+            Notify("⚡ Teleport", "Teleported to enemy goal!", 1.2, "⚡")
         end
     end)
 end
@@ -1479,23 +1496,36 @@ local function BringBallToMe()
         local ball = GetBall()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not ball or not hrp then return end
+        if not hrp then return end
         
-        if ball.Parent == Workspace then
-            local fake = ball:FindFirstChild("Fake")
-            for _, j in ipairs(ball:GetChildren()) do
-                if (j:IsA("JointInstance") or j:IsA("WeldConstraint")) and j.Name ~= "FakeWeld" and j.Part0 ~= fake and j.Part1 ~= fake then
+        if not ball then
+            Notify("Notice", "Ball not found!", 1.2, "⚽")
+            return
+        end
+        
+        if ball.Parent ~= Workspace then
+            for _, j in ipairs(ball.Parent:GetChildren()) do
+                if (j:IsA("JointInstance") or j:IsA("WeldConstraint")) and (j.Part0 == ball or j.Part1 == ball) then
                     j:Destroy()
                 end
             end
+            ball.Parent = Workspace
         end
         
+        for _, c in ipairs(ball:GetChildren()) do
+            if c:IsA("BodyVelocity") or c:IsA("BodyPosition") or c.Name == "FakeWeld" then
+                c:Destroy()
+            end
+        end
+        
+        ball.Transparency = 0
         ball.AssemblyLinearVelocity = Vector3.zero
-        ball.Position = hrp.Position + (hrp.CFrame.LookVector * 2.0) + Vector3.new(0, 1.0, 0)
+        ball.AssemblyAngularVelocity = Vector3.zero
+        ball.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * 1.8) + Vector3.new(0, 0.5, 0)
         
         pcall(function()
             if firetouchinterest then
-                local parts = {char:FindFirstChild("HeaderHitbox"), char:FindFirstChild("Right Leg"), char:FindFirstChild("HumanoidRootPart")}
+                local parts = {char:FindFirstChild("HeaderHitbox"), char:FindFirstChild("Right Leg"), char:FindFirstChild("Left Leg"), hrp}
                 for _, p in ipairs(parts) do
                     if p then
                         firetouchinterest(ball, p, 0)
