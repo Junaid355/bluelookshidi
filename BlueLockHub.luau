@@ -4179,6 +4179,26 @@ task.spawn(function()
                     if char:FindFirstChild("Stamina") and char.Stamina:IsA("NumberValue") then
                         char.Stamina.Value = 100
                     end
+                    pcall(function()
+                        if Events and Events:FindFirstChild("RemoveCooldown") then
+                            Events.RemoveCooldown:Fire()
+                        end
+                        local adminEv = Events and Events:FindFirstChild("AdminEvents") and Events.AdminEvents:FindFirstChild("Event")
+                        if adminEv and adminEv:FindFirstChild("NoCD") then
+                            adminEv.NoCD:FireServer()
+                        end
+                    end)
+                end
+                if Config.AutoAwakening then
+                    pcall(function()
+                        if Events and Events:FindFirstChild("UseAwakening") then
+                            Events.UseAwakening:FireServer()
+                        end
+                        local adminEv = Events and Events:FindFirstChild("AdminEvents") and Events.AdminEvents:FindFirstChild("Event")
+                        if adminEv and adminEv:FindFirstChild("GiveAwk") then
+                            adminEv.GiveAwk:FireServer()
+                        end
+                    end)
                 end
             end
         end)
