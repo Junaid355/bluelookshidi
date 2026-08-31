@@ -70,6 +70,7 @@ end
 
 local UI_PARENT = GetSafeUIParent()
 
+do
 -- ==============================================================================
 --                               CONFIGURATION
 -- ==============================================================================
@@ -134,8 +135,8 @@ local Config = {
     GodGK = true,
     SuperhumanGKPredictor = true,
     AntiChipSweeper = true,
-    GKCounterAttack = true,
-    GKAutoCounterClear = true,
+    GKCounterAttack = false,
+    GKAutoCounterClear = false,
     AutoGKDive = false,
     AutoGKDistance = 35,
     AutoGKPositioning = false,
@@ -1065,6 +1066,131 @@ local function ExecuteSilentKickoffGoal()
         PlaySound("rbxassetid://6895079853", 1.5)
         Notify("🎯 SILENT KICKOFF GOAL", "High-altitude lob fired straight from kickoff into the net!", 1.8, "🎯")
     end)
+end
+
+local function ExecuteBachiraMonsterDribble()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        local ball = GetBall()
+        if not hrp or not hum then return end
+        
+        task.spawn(function()
+            for i = 1, 4 do
+                local angle = (i % 2 == 0) and 1 or -1
+                local zigzagOffset = (hrp.CFrame.RightVector * (angle * 7.5)) + (hrp.CFrame.LookVector * 5.0)
+                hrp.CFrame = hrp.CFrame + zigzagOffset
+                if ball and ball.Parent == Workspace and (ball.Position - hrp.Position).Magnitude <= 14 then
+                    ball.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * 1.8)
+                    ball.AssemblyLinearVelocity = hrp.CFrame.LookVector * 30
+                end
+                if Events and Events:FindFirstChild("Dribble") then
+                    pcall(function() Events.Dribble:InvokeServer() end)
+                end
+                task.wait(0.06)
+            end
+        end)
+        
+        PlaySound("rbxassetid://6895079853", 1.35)
+        Notify("🐝 MONSTER DRIBBLE", "Bachira elastic feint sequence executed!", 1.5, "🐝")
+    end)
+end
+
+local function ExecuteNagiRevolverVolley()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local goalPos = GetEnemyGoal()
+        local targetPos = goalPos + Vector3.new(0, 6.8, (math.random() > 0.5 and 10.5 or -10.5))
+        local strikeDir = (targetPos - hrp.Position).Unit
+        
+        if hum then hum.Jump = true end
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(strikeDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(strikeDir, 100) end)
+        end
+        
+        BoostBallRocket(targetPos, 310)
+        PlaySound("rbxassetid://6895079853", 1.45)
+        Notify("🌌 REVOLVER VOLLEY", "Nagi 2-Stage Airborne Revolver Strike fired!", 1.6, "🌌")
+    end)
+end
+
+local function ExecuteChigiriMachSprint()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        if not hrp or not hum then return end
+        
+        local moveDir = hum.MoveDirection
+        if moveDir.Magnitude == 0 then moveDir = hrp.CFrame.LookVector end
+        
+        if hrp:FindFirstChild("MachSprintBV") then hrp.MachSprintBV:Destroy() end
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "MachSprintBV"
+        bv.MaxForce = Vector3.new(1e7, 0, 1e7)
+        bv.Velocity = moveDir.Unit * 115
+        bv.Parent = hrp
+        
+        task.delay(0.35, function()
+            if bv and bv.Parent then bv:Destroy() end
+        end)
+        
+        PlaySound("rbxassetid://6895079853", 1.4)
+        Notify("🐆 MACH SPRINT", "Chigiri 44-caliber turbo sprint engaged!", 1.5, "🐆")
+    end)
+end
+
+local function ExecuteGagamaruBeastLeap()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        local ball = GetBall()
+        if not hrp or not hum then return end
+        
+        local targetPoint = ball and ball.Position or (hrp.Position + (hrp.CFrame.LookVector * 12) + Vector3.new(0, 8, 0))
+        local leapDelta = (targetPoint - hrp.Position)
+        local leapSpeed = math.clamp(leapDelta.Magnitude * 6.0, 45, 95)
+        
+        hum.Jump = true
+        if hrp:FindFirstChild("BeastLeapBV") then hrp.BeastLeapBV:Destroy() end
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "BeastLeapBV"
+        bv.MaxForce = Vector3.new(1e7, 1e7, 1e7)
+        bv.Velocity = (leapDelta.Unit * leapSpeed) + Vector3.new(0, 18, 0)
+        bv.Parent = hrp
+        
+        task.delay(0.35, function()
+            if bv and bv.Parent then bv:Destroy() end
+        end)
+        
+        if Events and Events:FindFirstChild("GKDive") then
+            Events.GKDive:FireServer("Forward")
+        end
+        local adminEv = Events and Events:FindFirstChild("AdminEvents") and Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("FastGK") then
+            adminEv.FastGK:FireServer()
+        end
+        
+        PlaySound("rbxassetid://6895079853", 1.45)
+        Notify("🐻 BEAST LEAP", "Gagamaru acrobatic crossbar leap executed!", 1.6, "🐻")
+    end)
+end
+
+local function ExecuteHioriMetavisionThroughPass()
+    ExecuteAutoPass()
 end
 
 local function ApplyPlaystylePreset(presetName)
@@ -2565,6 +2691,9 @@ PagesFolder.Parent = ContentContainer
 local AllTabs = {}
 local CurrentActiveTab = nil
 
+local TWEEN_FAST = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local TWEEN_MID = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
 local function CreateTab(name, icon, subtitle)
     local TabButton = Instance.new("TextButton")
     TabButton.Size = UDim2.new(1, -20, 0, 44)
@@ -3225,6 +3354,26 @@ end)
 
 GodmodeTab:AddButton("🦁 🛡️ King's 90° Chop Dribble", "Execute Chop", function()
     ExecuteBarouChopDribble()
+end)
+
+GodmodeTab:AddButton("🐝 🛡️ Bachira Monster Elastic Dribble", "Execute Dribble", function()
+    ExecuteBachiraMonsterDribble()
+end)
+
+GodmodeTab:AddButton("🌌 ☢️ Nagi Revolver Airborne Strike", "Fire Revolver", function()
+    ExecuteNagiRevolverVolley()
+end)
+
+GodmodeTab:AddButton("🐆 ⚡ Chigiri Mach Turbo Sprint", "Engage Sprint", function()
+    ExecuteChigiriMachSprint()
+end)
+
+GodmodeTab:AddButton("🐻 🧤 Gagamaru Acrobat Beast Leap", "Execute Leap", function()
+    ExecuteGagamaruBeastLeap()
+end)
+
+GodmodeTab:AddButton("🌐 🎯 Hiori Metavision Lead Pass", "Deliver Pass", function()
+    ExecuteHioriMetavisionThroughPass()
 end)
 
 GodmodeTab:AddButton("🎯 ☢️ Fire Silent Kickoff Goal", "Fire Kickoff", function()
@@ -3922,116 +4071,118 @@ end)
 -- ==============================================================================
 --                                CYBER HUD WIDGET
 -- ==============================================================================
-local HUDFrame = Instance.new("Frame")
-HUDFrame.Name = "CyberMetavisionHUD"
-HUDFrame.Size = UDim2.new(0, 260, 0, 100)
-HUDFrame.Position = UDim2.new(0.5, -130, 0, 12)
-HUDFrame.BackgroundColor3 = Color3.fromRGB(12, 16, 25)
-HUDFrame.BackgroundTransparency = 0.18
-HUDFrame.BorderSizePixel = 0
-HUDFrame.Visible = Config.CyberHUD
-HUDFrame.ZIndex = 80
-HUDFrame.Parent = ScreenGui
+local HUD = {}
 
-local HUDCorner = Instance.new("UICorner")
-HUDCorner.CornerRadius = UDim.new(0, 10)
-HUDCorner.Parent = HUDFrame
+HUD.Frame = Instance.new("Frame")
+HUD.Frame.Name = "CyberMetavisionHUD"
+HUD.Frame.Size = UDim2.new(0, 260, 0, 100)
+HUD.Frame.Position = UDim2.new(0.5, -130, 0, 12)
+HUD.Frame.BackgroundColor3 = Color3.fromRGB(12, 16, 25)
+HUD.Frame.BackgroundTransparency = 0.18
+HUD.Frame.BorderSizePixel = 0
+HUD.Frame.Visible = Config.CyberHUD
+HUD.Frame.ZIndex = 80
+HUD.Frame.Parent = ScreenGui
 
-local HUDStroke = Instance.new("UIStroke")
-HUDStroke.Color = Color3.fromRGB(255, 182, 205)
-HUDStroke.Thickness = 1.2
-HUDStroke.Transparency = 0.3
-HUDStroke.Parent = HUDFrame
+HUD.Corner = Instance.new("UICorner")
+HUD.Corner.CornerRadius = UDim.new(0, 10)
+HUD.Corner.Parent = HUD.Frame
 
-local HUDTitle = Instance.new("TextLabel")
-HUDTitle.Size = UDim2.new(1, -16, 0, 20)
-HUDTitle.Position = UDim2.new(0, 8, 0, 4)
-HUDTitle.BackgroundTransparency = 1
-HUDTitle.Text = "👁️ METAVISION HUD | LIVE"
-HUDTitle.TextColor3 = Color3.fromRGB(255, 182, 205)
-HUDTitle.Font = Enum.Font.GothamBold
-HUDTitle.TextSize = 10
-HUDTitle.TextXAlignment = Enum.TextXAlignment.Left
-HUDTitle.ZIndex = 81
-HUDTitle.Parent = HUDFrame
+HUD.Stroke = Instance.new("UIStroke")
+HUD.Stroke.Color = Color3.fromRGB(255, 182, 205)
+HUD.Stroke.Thickness = 1.2
+HUD.Stroke.Transparency = 0.3
+HUD.Stroke.Parent = HUD.Frame
 
-local HUDBallSpeed = Instance.new("TextLabel")
-HUDBallSpeed.Size = UDim2.new(0.5, -10, 0, 18)
-HUDBallSpeed.Position = UDim2.new(0, 8, 0, 26)
-HUDBallSpeed.BackgroundTransparency = 1
-HUDBallSpeed.Text = "Ball Spd: 0 km/h"
-HUDBallSpeed.TextColor3 = Color3.fromRGB(0, 220, 255)
-HUDBallSpeed.Font = Enum.Font.GothamMedium
-HUDBallSpeed.TextSize = 10
-HUDBallSpeed.TextXAlignment = Enum.TextXAlignment.Left
-HUDBallSpeed.ZIndex = 81
-HUDBallSpeed.Parent = HUDFrame
+HUD.Title = Instance.new("TextLabel")
+HUD.Title.Size = UDim2.new(1, -16, 0, 20)
+HUD.Title.Position = UDim2.new(0, 8, 0, 4)
+HUD.Title.BackgroundTransparency = 1
+HUD.Title.Text = "👁️ METAVISION HUD | LIVE"
+HUD.Title.TextColor3 = Color3.fromRGB(255, 182, 205)
+HUD.Title.Font = Enum.Font.GothamBold
+HUD.Title.TextSize = 10
+HUD.Title.TextXAlignment = Enum.TextXAlignment.Left
+HUD.Title.ZIndex = 81
+HUD.Title.Parent = HUD.Frame
 
-local HUDGoalDist = Instance.new("TextLabel")
-HUDGoalDist.Size = UDim2.new(0.5, -10, 0, 18)
-HUDGoalDist.Position = UDim2.new(0.5, 2, 0, 26)
-HUDGoalDist.BackgroundTransparency = 1
-HUDGoalDist.Text = "Goal Dist: 0m"
-HUDGoalDist.TextColor3 = Color3.fromRGB(0, 255, 170)
-HUDGoalDist.Font = Enum.Font.GothamMedium
-HUDGoalDist.TextSize = 10
-HUDGoalDist.TextXAlignment = Enum.TextXAlignment.Left
-HUDGoalDist.ZIndex = 81
-HUDGoalDist.Parent = HUDFrame
+HUD.BallSpeed = Instance.new("TextLabel")
+HUD.BallSpeed.Size = UDim2.new(0.5, -10, 0, 18)
+HUD.BallSpeed.Position = UDim2.new(0, 8, 0, 26)
+HUD.BallSpeed.BackgroundTransparency = 1
+HUD.BallSpeed.Text = "Ball Spd: 0 km/h"
+HUD.BallSpeed.TextColor3 = Color3.fromRGB(0, 220, 255)
+HUD.BallSpeed.Font = Enum.Font.GothamMedium
+HUD.BallSpeed.TextSize = 10
+HUD.BallSpeed.TextXAlignment = Enum.TextXAlignment.Left
+HUD.BallSpeed.ZIndex = 81
+HUD.BallSpeed.Parent = HUD.Frame
 
-local HUDFlowMeter = Instance.new("TextLabel")
-HUDFlowMeter.Size = UDim2.new(0.5, -10, 0, 18)
-HUDFlowMeter.Position = UDim2.new(0, 8, 0, 46)
-HUDFlowMeter.BackgroundTransparency = 1
-HUDFlowMeter.Text = "Flow: 0%"
-HUDFlowMeter.TextColor3 = Color3.fromRGB(255, 200, 50)
-HUDFlowMeter.Font = Enum.Font.GothamMedium
-HUDFlowMeter.TextSize = 10
-HUDFlowMeter.TextXAlignment = Enum.TextXAlignment.Left
-HUDFlowMeter.ZIndex = 81
-HUDFlowMeter.Parent = HUDFrame
+HUD.GoalDist = Instance.new("TextLabel")
+HUD.GoalDist.Size = UDim2.new(0.5, -10, 0, 18)
+HUD.GoalDist.Position = UDim2.new(0.5, 2, 0, 26)
+HUD.GoalDist.BackgroundTransparency = 1
+HUD.GoalDist.Text = "Goal Dist: 0m"
+HUD.GoalDist.TextColor3 = Color3.fromRGB(0, 255, 170)
+HUD.GoalDist.Font = Enum.Font.GothamMedium
+HUD.GoalDist.TextSize = 10
+HUD.GoalDist.TextXAlignment = Enum.TextXAlignment.Left
+HUD.GoalDist.ZIndex = 81
+HUD.GoalDist.Parent = HUD.Frame
 
-local HUDFarmStats = Instance.new("TextLabel")
-HUDFarmStats.Size = UDim2.new(0.5, -10, 0, 18)
-HUDFarmStats.Position = UDim2.new(0.5, 2, 0, 46)
-HUDFarmStats.BackgroundTransparency = 1
-HUDFarmStats.Text = "Session: 0 Goals"
-HUDFarmStats.TextColor3 = Color3.fromRGB(255, 150, 200)
-HUDFarmStats.Font = Enum.Font.GothamMedium
-HUDFarmStats.TextSize = 10
-HUDFarmStats.TextXAlignment = Enum.TextXAlignment.Left
-HUDFarmStats.ZIndex = 81
-HUDFarmStats.Parent = HUDFrame
+HUD.FlowMeter = Instance.new("TextLabel")
+HUD.FlowMeter.Size = UDim2.new(0.5, -10, 0, 18)
+HUD.FlowMeter.Position = UDim2.new(0, 8, 0, 46)
+HUD.FlowMeter.BackgroundTransparency = 1
+HUD.FlowMeter.Text = "Flow: 0%"
+HUD.FlowMeter.TextColor3 = Color3.fromRGB(255, 200, 50)
+HUD.FlowMeter.Font = Enum.Font.GothamMedium
+HUD.FlowMeter.TextSize = 10
+HUD.FlowMeter.TextXAlignment = Enum.TextXAlignment.Left
+HUD.FlowMeter.ZIndex = 81
+HUD.FlowMeter.Parent = HUD.Frame
 
-local HUDGaugeTrack = Instance.new("Frame")
-HUDGaugeTrack.Size = UDim2.new(1, -16, 0, 4)
-HUDGaugeTrack.Position = UDim2.new(0, 8, 0, 72)
-HUDGaugeTrack.BackgroundColor3 = Color3.fromRGB(25, 34, 50)
-HUDGaugeTrack.BorderSizePixel = 0
-HUDGaugeTrack.ZIndex = 81
-HUDGaugeTrack.Parent = HUDFrame
+HUD.FarmStats = Instance.new("TextLabel")
+HUD.FarmStats.Size = UDim2.new(0.5, -10, 0, 18)
+HUD.FarmStats.Position = UDim2.new(0.5, 2, 0, 46)
+HUD.FarmStats.BackgroundTransparency = 1
+HUD.FarmStats.Text = "Session: 0 Goals"
+HUD.FarmStats.TextColor3 = Color3.fromRGB(255, 150, 200)
+HUD.FarmStats.Font = Enum.Font.GothamMedium
+HUD.FarmStats.TextSize = 10
+HUD.FarmStats.TextXAlignment = Enum.TextXAlignment.Left
+HUD.FarmStats.ZIndex = 81
+HUD.FarmStats.Parent = HUD.Frame
 
-local HUDGaugeTrackCorner = Instance.new("UICorner")
-HUDGaugeTrackCorner.CornerRadius = UDim.new(1, 0)
-HUDGaugeTrackCorner.Parent = HUDGaugeTrack
+HUD.GaugeTrack = Instance.new("Frame")
+HUD.GaugeTrack.Size = UDim2.new(1, -16, 0, 4)
+HUD.GaugeTrack.Position = UDim2.new(0, 8, 0, 68)
+HUD.GaugeTrack.BackgroundColor3 = Color3.fromRGB(20, 28, 45)
+HUD.GaugeTrack.BorderSizePixel = 0
+HUD.GaugeTrack.ZIndex = 81
+HUD.GaugeTrack.Parent = HUD.Frame
 
-local HUDGaugeFill = Instance.new("Frame")
-HUDGaugeFill.Size = UDim2.new(0, 0, 1, 0)
-HUDGaugeFill.BackgroundColor3 = Color3.fromRGB(0, 230, 255)
-HUDGaugeFill.BorderSizePixel = 0
-HUDGaugeFill.ZIndex = 82
-HUDGaugeFill.Parent = HUDGaugeTrack
+HUD.GaugeCorner = Instance.new("UICorner")
+HUD.GaugeCorner.CornerRadius = UDim.new(1, 0)
+HUD.GaugeCorner.Parent = HUD.GaugeTrack
 
-local HUDGaugeFillCorner = Instance.new("UICorner")
-HUDGaugeFillCorner.CornerRadius = UDim.new(1, 0)
-HUDGaugeFillCorner.Parent = HUDGaugeFill
+HUD.GaugeFill = Instance.new("Frame")
+HUD.GaugeFill.Size = UDim2.new(0, 0, 1, 0)
+HUD.GaugeFill.BackgroundColor3 = Color3.fromRGB(0, 230, 255)
+HUD.GaugeFill.BorderSizePixel = 0
+HUD.GaugeFill.ZIndex = 82
+HUD.GaugeFill.Parent = HUD.GaugeTrack
+
+HUD.GaugeFillCorner = Instance.new("UICorner")
+HUD.GaugeFillCorner.CornerRadius = UDim.new(1, 0)
+HUD.GaugeFillCorner.Parent = HUD.GaugeFill
 
 local hudDrag, hudDragInput, hudDragStart, hudStartPos
-HUDFrame.InputBegan:Connect(function(input)
+HUD.Frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         hudDrag = true
         hudDragStart = input.Position
-        hudStartPos = HUDFrame.Position
+        hudStartPos = HUD.Frame.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 hudDrag = false
@@ -4040,7 +4191,7 @@ HUDFrame.InputBegan:Connect(function(input)
     end
 end)
 
-HUDFrame.InputChanged:Connect(function(input)
+HUD.Frame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         hudDragInput = input
     end
@@ -4049,7 +4200,7 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == hudDragInput and hudDrag then
         local delta = input.Position - hudDragStart
-        HUDFrame.Position = UDim2.new(hudStartPos.X.Scale, hudStartPos.X.Offset + delta.X, hudStartPos.Y.Scale, hudStartPos.Y.Offset + delta.Y)
+        HUD.Frame.Position = UDim2.new(hudStartPos.X.Scale, hudStartPos.X.Offset + delta.X, hudStartPos.Y.Scale, hudStartPos.Y.Offset + delta.Y)
     end
 end)
 
@@ -4057,7 +4208,7 @@ task.spawn(function()
     while IsSessionActive() do
         task.wait(0.15)
         pcall(function()
-            HUDFrame.Visible = Config.CyberHUD
+            HUD.Frame.Visible = Config.CyberHUD
             if not Config.CyberHUD then return end
             
             local ball = GetBall()
@@ -4066,28 +4217,28 @@ task.spawn(function()
             
             if ball and ball:IsA("BasePart") then
                 local spd = math.floor(ball.AssemblyLinearVelocity.Magnitude * 2.8)
-                HUDBallSpeed.Text = string.format("Ball Spd: %d km/h", spd)
+                HUD.BallSpeed.Text = string.format("Ball Spd: %d km/h", spd)
                 local fillPct = math.clamp(spd / 200, 0, 1)
-                HUDGaugeFill.Size = UDim2.new(fillPct, 0, 1, 0)
+                HUD.GaugeFill.Size = UDim2.new(fillPct, 0, 1, 0)
             else
-                HUDBallSpeed.Text = "Ball Spd: 0 km/h"
-                HUDGaugeFill.Size = UDim2.new(0, 0, 1, 0)
+                HUD.BallSpeed.Text = "Ball Spd: 0 km/h"
+                HUD.GaugeFill.Size = UDim2.new(0, 0, 1, 0)
             end
 
             if hrp then
                 local goalPos = GetEnemyGoal()
                 local dist = math.floor((goalPos - hrp.Position).Magnitude)
-                HUDGoalDist.Text = string.format("Goal Dist: %dm", dist)
+                HUD.GoalDist.Text = string.format("Goal Dist: %dm", dist)
             end
 
             local awkBar = LocalPlayer.PlayerGui:FindFirstChild("AwakeningBar")
             if awkBar and awkBar.Enabled then
-                HUDFlowMeter.Text = "Flow: Active / Ready"
+                HUD.FlowMeter.Text = "Flow: Active / Ready"
             else
-                HUDFlowMeter.Text = "Flow: Charging"
+                HUD.FlowMeter.Text = "Flow: Charging"
             end
 
-            HUDFarmStats.Text = string.format("Goals: %d | Saves: %d", SessionStats.GoalsScored, SessionStats.SavesMade)
+            HUD.FarmStats.Text = string.format("Goals: %d | Saves: %d", SessionStats.GoalsScored, SessionStats.SavesMade)
         end)
     end
 end)
@@ -4521,22 +4672,26 @@ RunService.Heartbeat:Connect(function()
 
         if hasBall or not ball or not ball:IsA("BasePart") then return end
         
-        -- If loose ball is near GK, actively scoop/claim the ball
+        -- If loose ball is near GK, securely scoop/claim the ball
         local distToBall = (ball.Position - myHrp.Position).Magnitude
         if distToBall <= 16 and ball.Parent == Workspace and (tick() - lastPassTick) >= 1.4 then
             pcall(function()
+                if ball:FindFirstChild("CanPickUpBall") and ball.CanPickUpBall:IsA("BoolValue") then
+                    ball.CanPickUpBall.Value = true
+                end
                 local pullTarget = myHrp.Position + (myHrp.CFrame.LookVector * 1.5) + Vector3.new(0, -0.6, 0)
-                ball.AssemblyLinearVelocity = (pullTarget - ball.Position).Unit * 55
+                ball.AssemblyLinearVelocity = (pullTarget - ball.Position).Unit * 45
                 if firetouchinterest then
-                    firetouchinterest(ball, myHrp, 0)
-                    task.wait()
-                    firetouchinterest(ball, myHrp, 1)
-                    local headBox = myChar:FindFirstChild("HeaderHitbox")
-                    if headBox then
-                        firetouchinterest(ball, headBox, 0)
-                        task.wait()
-                        firetouchinterest(ball, headBox, 1)
+                    local parts = {myChar:FindFirstChild("HeaderHitbox"), myChar:FindFirstChild("Right Leg"), myChar:FindFirstChild("Left Leg"), myHrp}
+                    for _, p in ipairs(parts) do
+                        if p and p:IsA("BasePart") then
+                            firetouchinterest(ball, p, 0)
+                            firetouchinterest(ball, p, 1)
+                        end
                     end
+                end
+                if ball:FindFirstChild("WeldBall") and ball.WeldBall:IsA("RemoteEvent") then
+                    ball.WeldBall:FireServer()
                 end
             end)
         end
@@ -4923,51 +5078,53 @@ end)
 -- ==============================================================================
 --              METAVISION ESP STUDIO (PASS LANES & DANGER ZONES)
 -- ==============================================================================
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "BlueLockMetavisionESP"
-ESPFolder.Parent = ScreenGui
+local ESP = {
+    passBeams = {},
+    dangerHighlights = {}
+}
 
-local ballBillboard = Instance.new("BillboardGui")
-ballBillboard.Size = UDim2.new(0, 120, 0, 36)
-ballBillboard.AlwaysOnTop = true
-ballBillboard.Enabled = false
-ballBillboard.Parent = ESPFolder
+ESP.Folder = Instance.new("Folder")
+ESP.Folder.Name = "BlueLockMetavisionESP"
+ESP.Folder.Parent = ScreenGui
 
-local ballLabel = Instance.new("TextLabel")
-ballLabel.Size = UDim2.new(1, 0, 1, 0)
-ballLabel.BackgroundTransparency = 1
-ballLabel.Text = "⚽ BALL"
-ballLabel.TextColor3 = Color3.fromRGB(0, 240, 255)
-ballLabel.Font = Enum.Font.GothamBold
-ballLabel.TextSize = 13
-ballLabel.Parent = ballBillboard
+ESP.ballBillboard = Instance.new("BillboardGui")
+ESP.ballBillboard.Size = UDim2.new(0, 120, 0, 36)
+ESP.ballBillboard.AlwaysOnTop = true
+ESP.ballBillboard.Enabled = false
+ESP.ballBillboard.Parent = ESP.Folder
 
-local ballHighlight = Instance.new("Highlight")
-ballHighlight.FillColor = Color3.fromRGB(0, 220, 255)
-ballHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-ballHighlight.FillTransparency = 0.4
-ballHighlight.Parent = ESPFolder
+ESP.ballLabel = Instance.new("TextLabel")
+ESP.ballLabel.Size = UDim2.new(1, 0, 1, 0)
+ESP.ballLabel.BackgroundTransparency = 1
+ESP.ballLabel.Text = "⚽ BALL"
+ESP.ballLabel.TextColor3 = Color3.fromRGB(0, 240, 255)
+ESP.ballLabel.Font = Enum.Font.GothamBold
+ESP.ballLabel.TextSize = 13
+ESP.ballLabel.Parent = ESP.ballBillboard
 
-local TrajectoryBeam = Instance.new("Beam")
-local BeamAtt0 = Instance.new("Attachment", Workspace.Terrain)
-local BeamAtt1 = Instance.new("Attachment", Workspace.Terrain)
-TrajectoryBeam.Attachment0 = BeamAtt0
-TrajectoryBeam.Attachment1 = BeamAtt1
-TrajectoryBeam.Color = ColorSequence.new({
+ESP.ballHighlight = Instance.new("Highlight")
+ESP.ballHighlight.FillColor = Color3.fromRGB(0, 220, 255)
+ESP.ballHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+ESP.ballHighlight.FillTransparency = 0.4
+ESP.ballHighlight.Parent = ESP.Folder
+
+ESP.TrajectoryBeam = Instance.new("Beam")
+ESP.BeamAtt0 = Instance.new("Attachment", Workspace.Terrain)
+ESP.BeamAtt1 = Instance.new("Attachment", Workspace.Terrain)
+ESP.TrajectoryBeam.Attachment0 = ESP.BeamAtt0
+ESP.TrajectoryBeam.Attachment1 = ESP.BeamAtt1
+ESP.TrajectoryBeam.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 215, 255)),
     ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 182, 205)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 240, 255))
 })
-TrajectoryBeam.Width0 = 0.4
-TrajectoryBeam.Width1 = 0.15
-TrajectoryBeam.Transparency = NumberSequence.new(0.2)
-TrajectoryBeam.CurveSize0 = 3
-TrajectoryBeam.CurveSize1 = -3
-TrajectoryBeam.Enabled = false
-TrajectoryBeam.Parent = ESPFolder
-
-local passBeams = {}
-local dangerHighlights = {}
+ESP.TrajectoryBeam.Width0 = 0.4
+ESP.TrajectoryBeam.Width1 = 0.15
+ESP.TrajectoryBeam.Transparency = NumberSequence.new(0.2)
+ESP.TrajectoryBeam.CurveSize0 = 3
+ESP.TrajectoryBeam.CurveSize1 = -3
+ESP.TrajectoryBeam.Enabled = false
+ESP.TrajectoryBeam.Parent = ESP.Folder
 
 RunService.RenderStepped:Connect(function()
     pcall(function()
@@ -4976,25 +5133,25 @@ RunService.RenderStepped:Connect(function()
         local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
         
         if ball and Config.BallESP then
-            ballBillboard.Enabled = true
-            ballBillboard.Adornee = ball
-            ballHighlight.Adornee = ball
+            ESP.ballBillboard.Enabled = true
+            ESP.ballBillboard.Adornee = ball
+            ESP.ballHighlight.Adornee = ball
             
             local dist = myHrp and math.floor((ball.Position - myHrp.Position).Magnitude) or 0
-            ballLabel.Text = string.format("⚽ BALL [%dm]", dist)
+            ESP.ballLabel.Text = string.format("⚽ BALL [%dm]", dist)
             
             if Config.TrajectoryESP and myChar and myChar:GetAttribute("HasBall") == true then
                 local goalPos = GetEnemyGoal()
-                BeamAtt0.WorldPosition = ball.Position
-                BeamAtt1.WorldPosition = goalPos
-                TrajectoryBeam.Enabled = true
+                ESP.BeamAtt0.WorldPosition = ball.Position
+                ESP.BeamAtt1.WorldPosition = goalPos
+                ESP.TrajectoryBeam.Enabled = true
             else
-                TrajectoryBeam.Enabled = false
+                ESP.TrajectoryBeam.Enabled = false
             end
         else
-            ballBillboard.Enabled = false
-            ballHighlight.Adornee = nil
-            TrajectoryBeam.Enabled = false
+            ESP.ballBillboard.Enabled = false
+            ESP.ballHighlight.Adornee = nil
+            ESP.TrajectoryBeam.Enabled = false
         end
 
         if Config.PassLaneESP and myHrp then
@@ -5007,7 +5164,7 @@ RunService.RenderStepped:Connect(function()
                         local dist = (tHrp.Position - myHrp.Position).Magnitude
                         
                         if dist <= 180 then
-                            local beamData = passBeams[plr]
+                            local beamData = ESP.passBeams[plr]
                             if not beamData then
                                 local a0 = Instance.new("Attachment", Workspace.Terrain)
                                 local a1 = Instance.new("Attachment", Workspace.Terrain)
@@ -5019,7 +5176,7 @@ RunService.RenderStepped:Connect(function()
                                 b.Transparency = NumberSequence.new(0.3)
                                 b.Parent = ESPFolder
                                 beamData = {Beam = b, Att0 = a0, Att1 = a1}
-                                passBeams[plr] = beamData
+                                ESP.passBeams[plr] = beamData
                             end
 
                             local isBlocked = false
@@ -5046,18 +5203,18 @@ RunService.RenderStepped:Connect(function()
                                 and ColorSequence.new(Color3.fromRGB(255, 60, 80)) 
                                 or ColorSequence.new(Color3.fromRGB(0, 255, 140))
                             beamData.Beam.Enabled = true
-                        elseif passBeams[plr] then
-                            passBeams[plr].Beam.Enabled = false
+                        elseif ESP.passBeams[plr] then
+                            ESP.passBeams[plr].Beam.Enabled = false
                         end
-                    elseif passBeams[plr] then
-                        passBeams[plr].Beam.Enabled = false
+                    elseif ESP.passBeams[plr] then
+                        ESP.passBeams[plr].Beam.Enabled = false
                     end
-                elseif passBeams[plr] then
-                    passBeams[plr].Beam.Enabled = false
+                elseif ESP.passBeams[plr] then
+                    ESP.passBeams[plr].Beam.Enabled = false
                 end
             end
         else
-            for _, b in pairs(passBeams) do b.Beam.Enabled = false end
+            for _, b in pairs(ESP.passBeams) do b.Beam.Enabled = false end
         end
 
         if Config.TackleDangerZoneESP and myHrp then
@@ -5068,13 +5225,13 @@ RunService.RenderStepped:Connect(function()
                     local dist = (eHrp.Position - myHrp.Position).Magnitude
                     
                     if dist <= 60 then
-                        local hl = dangerHighlights[plr]
+                        local hl = ESP.dangerHighlights[plr]
                         if not hl then
                             hl = Instance.new("Highlight")
                             hl.FillTransparency = 0.55
                             hl.OutlineTransparency = 0.2
                             hl.Parent = ESPFolder
-                            dangerHighlights[plr] = hl
+                            ESP.dangerHighlights[plr] = hl
                         end
 
                         local isThreat = eChar:GetAttribute("Sliding") == true or eHrp.AssemblyLinearVelocity.Magnitude > 26
@@ -5082,15 +5239,15 @@ RunService.RenderStepped:Connect(function()
                         hl.FillColor = isThreat and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(255, 140, 30)
                         hl.OutlineColor = isThreat and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 180, 50)
                         hl.Enabled = true
-                    elseif dangerHighlights[plr] then
-                        dangerHighlights[plr].Enabled = false
+                    elseif ESP.dangerHighlights[plr] then
+                        ESP.dangerHighlights[plr].Enabled = false
                     end
-                elseif dangerHighlights[plr] then
-                    dangerHighlights[plr].Enabled = false
+                elseif ESP.dangerHighlights[plr] then
+                    ESP.dangerHighlights[plr].Enabled = false
                 end
             end
         else
-            for _, hl in pairs(dangerHighlights) do hl.Enabled = false end
+            for _, hl in pairs(ESP.dangerHighlights) do hl.Enabled = false end
         end
     end)
 end)
@@ -5111,3 +5268,5 @@ end)
 
 print("🌙 [LUNAR HUB] Columbina Edition v7.0 Supreme Loaded Successfully!")
 Notify("🌙 LUNAR HUB v7.0", "Supreme Edition Loaded! All features active.", 2.5, "🕊️")
+
+end
