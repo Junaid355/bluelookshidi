@@ -1521,11 +1521,18 @@ local function ResetOutOfBoundsBall()
         if not ball or ball.Parent ~= Workspace then return end
         
         local pos = ball.Position
-        local outOfBounds = math.abs(pos.X) > 245 or math.abs(pos.Z) > 140 or pos.Y < 1.0 or pos.Y > 50.0
-        if outOfBounds then
+        local isOverflow = (pos.X ~= pos.X) or (pos.Y ~= pos.Y) or (pos.Z ~= pos.Z) or math.abs(pos.X) > 245 or math.abs(pos.Z) > 140 or pos.Y < 1.0 or pos.Y > 55.0
+        if isOverflow then
+            for _, c in ipairs(ball:GetChildren()) do
+                if c:IsA("BodyVelocity") or c:IsA("BodyPosition") or c.Name == "FakeWeld" then
+                    c:Destroy()
+                end
+            end
+            ball.Transparency = 0
             ball.AssemblyLinearVelocity = Vector3.zero
-            ball.Position = Vector3.new(0, 5, 0)
-            Notify("🌊 Anti-Void", "Out-of-bounds ball safely returned to center field!", 1.8, "⚽")
+            ball.AssemblyAngularVelocity = Vector3.zero
+            ball.CFrame = CFrame.new(0, 5, 0)
+            Notify("🌊 Anti-Void", "Ball safely returned to center field!", 1.5, "⚽")
         end
     end)
 end
@@ -4851,22 +4858,11 @@ RunService.RenderStepped:Connect(function(dt)
         
         local hasBall = char:GetAttribute("HasBall") == true or ball.Parent == char
         
-        -- ⚽ Always keep Ball.Fake visual mesh locked, visible, and welded to Ball
+        -- ⚽ Ensure Ball and Fake mesh are always 100% visible
+        if ball.Transparency > 0 then ball.Transparency = 0 end
         local fake = ball:FindFirstChild("Fake")
-        if fake and fake:IsA("BasePart") then
+        if fake and fake:IsA("BasePart") and fake.Transparency > 0 then
             fake.Transparency = 0
-            if (fake.Position - ball.Position).Magnitude > 2.0 or not ball:FindFirstChild("FakeWeld") then
-                fake.CFrame = ball.CFrame
-                fake.AssemblyLinearVelocity = ball.AssemblyLinearVelocity
-                local fw = ball:FindFirstChild("FakeWeld")
-                if not fw then
-                    fw = Instance.new("WeldConstraint")
-                    fw.Name = "FakeWeld"
-                    fw.Part0 = ball
-                    fw.Part1 = fake
-                    fw.Parent = ball
-                end
-            end
         end
         
         -- If enemy holds the ball, handle auto-steal instead of direct physics
