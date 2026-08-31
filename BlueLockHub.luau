@@ -1347,6 +1347,59 @@ local function TeleportToGoal()
     end)
 end
 
+local function BringBallToMe()
+    pcall(function()
+        local ball = GetBall()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not ball or not hrp then return end
+        
+        if ball.Parent == Workspace then
+            for _, j in ipairs(ball:GetChildren()) do
+                if j:IsA("JointInstance") or j:IsA("WeldConstraint") then j:Destroy() end
+            end
+        end
+        
+        ball.AssemblyLinearVelocity = Vector3.zero
+        ball.Position = hrp.Position + (hrp.CFrame.LookVector * 2.0) + Vector3.new(0, 1.0, 0)
+        
+        pcall(function()
+            if firetouchinterest then
+                local parts = {char:FindFirstChild("HeaderHitbox"), char:FindFirstChild("Right Leg"), char:FindFirstChild("HumanoidRootPart")}
+                for _, p in ipairs(parts) do
+                    if p then
+                        firetouchinterest(ball, p, 0)
+                        firetouchinterest(ball, p, 1)
+                    end
+                end
+            end
+            if ball:FindFirstChild("WeldBall") and ball.WeldBall:IsA("RemoteEvent") then
+                ball.WeldBall:FireServer()
+            end
+            if ball:FindFirstChild("GiveBall") and ball.GiveBall:IsA("BindableEvent") then
+                ball.GiveBall:Fire(char)
+            end
+        end)
+        
+        Notify("🧲 Bring Ball", "Ball retrieved directly to your feet!", 1.5, "🧲")
+    end)
+end
+
+local function ResetOutOfBoundsBall()
+    pcall(function()
+        local ball = GetBall()
+        if not ball or ball.Parent ~= Workspace then return end
+        
+        local pos = ball.Position
+        local outOfBounds = math.abs(pos.X) > 245 or math.abs(pos.Z) > 140 or pos.Y < 1.0 or pos.Y > 50.0
+        if outOfBounds then
+            ball.AssemblyLinearVelocity = Vector3.zero
+            ball.Position = Vector3.new(0, 5, 0)
+            Notify("🌊 Anti-Void", "Out-of-bounds ball safely returned to center field!", 1.8, "⚽")
+        end
+    end)
+end
+
 local lastDashTick = 0
 local function ExecuteDashBurst()
     local now = tick()
@@ -3141,6 +3194,10 @@ GodmodeTab:AddToggle("🛡️ Protect Enemy GK in Goal Area", Config.ProtectEnem
     Notify("GK Box Protection", v and "ON: Auto-Steal ignores enemy GK in goal area" or "OFF", 1.5, "🛡️")
 end)
 
+GodmodeTab:AddButton("🧲 🛡️ Bring Ball to Feet (Retrieve)", "Bring Ball", function()
+    BringBallToMe()
+end)
+
 GodmodeTab:AddSection("⚡ Supreme OP Weapons & Egoist Moves (☢️ High Power)")
 GodmodeTab:AddButton("⚡ ☢️ Fire Kaiser Impact Strike", "Fire Hypersonic", function()
     ExecuteKaiserImpact()
@@ -4130,7 +4187,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
     elseif input.KeyCode == Config.DashBurstKey then
         ExecuteDashBurst()
     elseif input.KeyCode == Config.TPBallKey then
-        TeleportToBall()
+        BringBallToMe()
     elseif input.KeyCode == Config.TPGoalKey then
         TeleportToGoal()
     elseif input.KeyCode == Config.ToggleUIKey then
@@ -4200,6 +4257,9 @@ task.spawn(function()
                         end
                     end)
                 end
+                
+                -- Auto-retrieve balls that fly into the ocean / out of bounds
+                ResetOutOfBoundsBall()
             end
         end)
     end
