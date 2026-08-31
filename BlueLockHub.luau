@@ -1433,8 +1433,9 @@ local function FireSuperShot()
         
         pcall(function()
             if ball then
+                local fake = ball:FindFirstChild("Fake")
                 for _, child in ipairs(ball:GetChildren()) do
-                    if child:IsA("JointInstance") or child:IsA("WeldConstraint") then
+                    if (child:IsA("JointInstance") or child:IsA("WeldConstraint")) and child.Name ~= "FakeWeld" and child.Part0 ~= fake and child.Part1 ~= fake then
                         child:Destroy()
                     end
                 end
@@ -1481,8 +1482,11 @@ local function BringBallToMe()
         if not ball or not hrp then return end
         
         if ball.Parent == Workspace then
+            local fake = ball:FindFirstChild("Fake")
             for _, j in ipairs(ball:GetChildren()) do
-                if j:IsA("JointInstance") or j:IsA("WeldConstraint") then j:Destroy() end
+                if (j:IsA("JointInstance") or j:IsA("WeldConstraint")) and j.Name ~= "FakeWeld" and j.Part0 ~= fake and j.Part1 ~= fake then
+                    j:Destroy()
+                end
             end
         end
         
@@ -4846,6 +4850,24 @@ RunService.RenderStepped:Connect(function(dt)
         if not ball or not ball:IsA("BasePart") then return end
         
         local hasBall = char:GetAttribute("HasBall") == true or ball.Parent == char
+        
+        -- ⚽ Always keep Ball.Fake visual mesh locked, visible, and welded to Ball
+        local fake = ball:FindFirstChild("Fake")
+        if fake and fake:IsA("BasePart") then
+            fake.Transparency = 0
+            if (fake.Position - ball.Position).Magnitude > 2.0 or not ball:FindFirstChild("FakeWeld") then
+                fake.CFrame = ball.CFrame
+                fake.AssemblyLinearVelocity = ball.AssemblyLinearVelocity
+                local fw = ball:FindFirstChild("FakeWeld")
+                if not fw then
+                    fw = Instance.new("WeldConstraint")
+                    fw.Name = "FakeWeld"
+                    fw.Part0 = ball
+                    fw.Part1 = fake
+                    fw.Parent = ball
+                end
+            end
+        end
         
         -- If enemy holds the ball, handle auto-steal instead of direct physics
         if not hasBall and ball.Parent ~= Workspace and ball.Parent ~= char then
