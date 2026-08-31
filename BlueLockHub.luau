@@ -4630,12 +4630,32 @@ RunService.RenderStepped:Connect(function(dt)
         local ball = GetBall()
         if not ball or not ball:IsA("BasePart") then return end
         
+        local hasBall = char:GetAttribute("HasBall") == true or ball.Parent == char
+        
+        -- If enemy holds the ball, handle auto-steal instead of direct physics
+        if not hasBall and ball.Parent ~= Workspace and ball.Parent ~= char then
+            local holder = ball.Parent
+            if holder:IsA("Model") and holder:FindFirstChild("HumanoidRootPart") then
+                local distToHolder = (holder.HumanoidRootPart.Position - hrp.Position).Magnitude
+                if Config.AutoSteal and distToHolder <= (Config.TackleDistance or 18) then
+                    local plr = Players:GetPlayerFromCharacter(holder)
+                    if plr and IsEnemy(plr) and not ShouldSkipAutoStealOnPlayer(plr) then
+                        if Events and Events:FindFirstChild("StealBallSlide") then
+                            Events.StealBallSlide:InvokeServer(holder)
+                        end
+                        if Events and Events:FindFirstChild("SlideBegan") then
+                            Events.SlideBegan:FireServer()
+                        end
+                    end
+                end
+            end
+            return
+        end
+        
         if ball.Position.Y < 1.2 then
             ball.Position = Vector3.new(ball.Position.X, 2.5, ball.Position.Z)
             ball.AssemblyLinearVelocity = Vector3.new(ball.AssemblyLinearVelocity.X, math.max(0, ball.AssemblyLinearVelocity.Y), ball.AssemblyLinearVelocity.Z)
         end
-        
-        local hasBall = char:GetAttribute("HasBall") == true or ball.Parent == char
         
         if (tick() - lastShotTick) < 2.0 or (tick() - lastPassTick) < 1.4 then
             return
@@ -4706,35 +4726,50 @@ RunService.RenderStepped:Connect(function(dt)
             end
         end
         
-        if Config.NagiBlackHoleTrap and not hasBall and ball.Parent == Workspace and (tick() - lastPassTick) >= 1.4 then
+        -- High-Precision Ball Pickup & Touch Engine
+        if not hasBall and ball.Parent == Workspace and (tick() - lastPassTick) >= 1.4 then
             local dist = (ball.Position - hrp.Position).Magnitude
-            if dist <= 8.5 then
-                ball.AssemblyLinearVelocity = Vector3.zero
-                local trapPos = hrp.Position + (hrp.CFrame.LookVector * 1.4) + Vector3.new(0, -0.6, 0)
-                ball.Position = trapPos
+            
+            if ball:FindFirstChild("CanPickUpBall") and ball.CanPickUpBall:IsA("BoolValue") then
+                ball.CanPickUpBall.Value = true
+            end
+            
+            if dist <= 12 then
                 pcall(function()
                     if firetouchinterest then
-                        firetouchinterest(ball, hrp, 0)
-                        task.wait()
-                        firetouchinterest(ball, hrp, 1)
+                        local partsToTouch = {
+                            char:FindFirstChild("HeaderHitbox"),
+                            char:FindFirstChild("Right Leg"),
+                            char:FindFirstChild("Left Leg"),
+                            char:FindFirstChild("HumanoidRootPart"),
+                            char:FindFirstChild("Torso")
+                        }
+                        for _, p in ipairs(partsToTouch) do
+                            if p and p:IsA("BasePart") then
+                                firetouchinterest(ball, p, 0)
+                                firetouchinterest(ball, p, 1)
+                            end
+                        end
+                    end
+                    if ball:FindFirstChild("WeldBall") and ball.WeldBall:IsA("RemoteEvent") then
+                        ball.WeldBall:FireServer()
+                    end
+                    if ball:FindFirstChild("GiveBall") and ball.GiveBall:IsA("BindableEvent") then
+                        ball.GiveBall:Fire(char)
                     end
                 end)
             end
-        end
-        
-        if Config.AutoClaimBall and not hasBall then
-            local dist = (ball.Position - hrp.Position).Magnitude
-            if dist <= 8.5 then
+            
+            if Config.NagiBlackHoleTrap and dist <= 8.5 then
+                ball.AssemblyLinearVelocity = (hrp.Position - ball.Position).Unit * 12
+            elseif Config.BallMagnet and dist <= Config.BallMagnetDistance then
+                ball.AssemblyLinearVelocity = (hrp.Position - ball.Position).Unit * 55
+            end
+            
+            if Config.AutoClaimBall and dist <= 8.5 then
                 if Events and Events:FindFirstChild("SlideBegan") then
                     Events.SlideBegan:FireServer()
                 end
-            end
-        end
-        
-        if Config.BallMagnet and not hasBall then
-            local dist = (ball.Position - hrp.Position).Magnitude
-            if dist <= Config.BallMagnetDistance then
-                ball.AssemblyLinearVelocity = (hrp.Position - ball.Position).Unit * 55
             end
         end
     end)
