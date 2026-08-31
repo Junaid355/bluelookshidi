@@ -494,13 +494,13 @@ local function GetEnemyGoal()
         local g1 = map:FindFirstChild("PlayerOneGoal")
         local g2 = map:FindFirstChild("PlayerTwoGoal")
         if g1 then
-            local scorePart = g1:FindFirstChild("ScoreHitbox") or g1:FindFirstChild("AutoGoal")
+            local scorePart = g1:FindFirstChild("ScoreHitbox") or g1:FindFirstChild("AutoGoal") or g1:FindFirstChild("MidNetting") or g1:FindFirstChild("Frame")
             if scorePart then
                 p1 = Vector3.new(scorePart.Position.X, 6.0, scorePart.Position.Z)
             end
         end
         if g2 then
-            local scorePart = g2:FindFirstChild("ScoreHitbox") or g2:FindFirstChild("AutoGoal")
+            local scorePart = g2:FindFirstChild("ScoreHitbox") or g2:FindFirstChild("AutoGoal") or g2:FindFirstChild("MidNetting") or g2:FindFirstChild("Frame")
             if scorePart then
                 p2 = Vector3.new(scorePart.Position.X, 6.0, scorePart.Position.Z)
             end
