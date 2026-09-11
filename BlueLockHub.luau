@@ -319,16 +319,30 @@ end
 -- Auto-load saved config on startup
 LoadConfig(true)
 
--- Audio Feedback FX
-local function PlaySound(soundId, pitch)
+-- Audio Feedback & Sound Library Engine
+local AudioLibrary = {
+    Click = "rbxassetid://101572333845544",
+    Toggle = "rbxassetid://91804726042928",
+    Notify = "rbxassetid://101572333845544",
+    Awakening = "rbxassetid://95927820536197",
+    Kaiser = "rbxassetid://1079408535",
+    DirectShot = "rbxassetid://123691798248313",
+    TwoGun = "rbxassetid://98766783543541",
+    Goal = "rbxassetid://17629583511",
+    Slide = "rbxassetid://129832437149454",
+    MetalHit = "rbxassetid://8917041751"
+}
+
+local function PlaySound(soundKeyOrId, pitch, volume)
     pcall(function()
         local s = Instance.new("Sound")
-        s.SoundId = soundId or "rbxassetid://6895079853"
-        s.Volume = 0.45
+        local assetId = AudioLibrary[soundKeyOrId] or soundKeyOrId or AudioLibrary.Click
+        s.SoundId = assetId
+        s.Volume = volume or 0.55
         s.Pitch = pitch or 1
         s.Parent = Workspace
         s:Play()
-        game:GetService("Debris"):AddItem(s, 2)
+        game:GetService("Debris"):AddItem(s, 2.5)
     end)
 end
 
@@ -789,6 +803,117 @@ local function BoostBallRocket(targetPos, speed)
                 ExecuteGoalCelebration()
             end
         end)
+    end)
+end
+
+
+local function ExecuteLorenzoZombieDribble()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp then return end
+        
+        task.spawn(function()
+            for i = 1, 5 do
+                local offset = (hrp.CFrame.RightVector * ((i % 2 == 0 and 1 or -1) * 6.5)) + (hrp.CFrame.LookVector * 4.5)
+                hrp.CFrame = hrp.CFrame + offset
+                if ball and ball.Parent == Workspace and (ball.Position - hrp.Position).Magnitude <= 12 then
+                    ball.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * 1.5)
+                    ball.AssemblyLinearVelocity = hrp.CFrame.LookVector * 28
+                end
+                if Events and Events:FindFirstChild("Dribble") then
+                    pcall(function() Events.Dribble:InvokeServer() end)
+                end
+                task.wait(0.05)
+            end
+        end)
+        
+        PlaySound("Slide", 1.25)
+        Notify("🧟 ZOMBIE DRIBBLE", "Lorenzo Ace Eater feint broke opponent tackle lock!", 1.5, "🧟")
+    end)
+end
+
+local function ExecuteSaeLineDrivePass()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local targetTeammate = nil
+        local bestDist = math.huge
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and IsTeammate(p) and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local d = (p.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                if d > 15 and d < 220 and d < bestDist then
+                    bestDist = d
+                    targetTeammate = p.Character.HumanoidRootPart
+                end
+            end
+        end
+        
+        local targetPos = targetTeammate and (targetTeammate.Position + targetTeammate.CFrame.LookVector * 8) or (hrp.Position + hrp.CFrame.LookVector * 95)
+        local passDir = (targetPos - hrp.Position).Unit
+        
+        lastPassTick = tick()
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(passDir, 90)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(passDir, 90) end)
+        end
+        
+        BoostBallRocket(targetPos, 220)
+        PlaySound("DirectShot", 1.3)
+        Notify("🎯 LINE DRIVE PASS", "Sae Itoshi calculation pass delivered to forward space!", 1.6, "🎯")
+    end)
+end
+
+local function ExecuteNaoyaProjectionBurst()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        task.spawn(function()
+            for step = 1, 6 do
+                hrp.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * 14)
+                if Events and Events:FindFirstChild("DashClient") then
+                    pcall(function() Events.DashClient:FireServer() end)
+                end
+                task.wait(0.04)
+            end
+        end)
+        
+        PlaySound("Toggle", 1.4)
+        Notify("⚡ 24 FPS PROJECTION", "Naoya frame-skipping burst teleported past defenses!", 1.5, "⚡")
+    end)
+end
+
+local function ExecuteIchigoGetsugaVolley()
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = GetBall()
+        if not hrp or not ball then return end
+        
+        local goalPos = GetEnemyGoal()
+        local strikeDir = (goalPos - hrp.Position).Unit
+        
+        lastShotTick = tick()
+        SessionStats.GoalsScored = SessionStats.GoalsScored + 1
+        
+        if Events and Events:FindFirstChild("ShootBall") then
+            Events.ShootBall:FireServer(strikeDir, 100)
+        end
+        if Events and Events:FindFirstChild("ShootBallForce") then
+            pcall(function() Events.ShootBallForce:FireServer(strikeDir, 100) end)
+        end
+        
+        BoostBallRocket(goalPos + Vector3.new(0, 6.5, 0), 340)
+        PlaySound("Kaiser", 1.2)
+        Notify("🌙 GETSUGA VOLLEY", "Ichigo Getsuga Tensho laser strike blasted into top netting!", 1.8, "🌙")
     end)
 end
 
@@ -1330,9 +1455,38 @@ local function TeleportToBall()
         local ball = GetBall()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if ball and hrp then
-            hrp.CFrame = ball.CFrame + Vector3.new(0, 3.2, 0)
+        if not hrp then return end
+        
+        if not ball then
+            Notify("Notice", "Ball not found in game!", 1.2, "⚽")
+            return
         end
+        
+        local targetPos = ball.Position
+        if ball.Parent ~= Workspace and ball.Parent:FindFirstChild("HumanoidRootPart") then
+            targetPos = ball.Parent.HumanoidRootPart.Position
+        end
+        
+        hrp.CFrame = CFrame.new(targetPos.X, math.max(6.0, targetPos.Y + 2.0), targetPos.Z)
+        
+        char:SetAttribute("CantBall", false)
+        char:SetAttribute("Stunned", false)
+        char:SetAttribute("Ragdoll", false)
+        
+        local parts = {char:FindFirstChild("HeaderHitbox"), char:FindFirstChild("Right Leg"), char:FindFirstChild("Left Leg"), hrp}
+        for _, p in ipairs(parts) do
+            if p and firetouchinterest then
+                firetouchinterest(ball, p, 0)
+                firetouchinterest(ball, p, 1)
+            end
+        end
+        
+        if ball:FindFirstChild("WeldBall") and ball.WeldBall:IsA("RemoteEvent") then
+            ball.WeldBall:FireServer()
+        end
+        
+        PlaySound(nil, 1.2)
+        Notify("⚡ Teleport", "Teleported directly to ball!", 1.2, "⚡")
     end)
 end
 
@@ -1342,7 +1496,9 @@ local function TeleportToGoal()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
-            hrp.CFrame = CFrame.new(goalPos)
+            hrp.CFrame = CFrame.new(goalPos + Vector3.new(0, 4.0, 0))
+            PlaySound(nil, 1.2)
+            Notify("⚡ Teleport", "Teleported to enemy goal!", 1.2, "⚡")
         end
     end)
 end
@@ -1352,36 +1508,54 @@ local function BringBallToMe()
         local ball = GetBall()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not ball or not hrp then return end
+        if not hrp then return end
         
-        if ball.Parent == Workspace then
-            for _, j in ipairs(ball:GetChildren()) do
-                if j:IsA("JointInstance") or j:IsA("WeldConstraint") then j:Destroy() end
-            end
+        if not ball then
+            Notify("Notice", "Ball not found!", 1.2, "⚽")
+            return
         end
         
-        ball.AssemblyLinearVelocity = Vector3.zero
-        ball.Position = hrp.Position + (hrp.CFrame.LookVector * 2.0) + Vector3.new(0, 1.0, 0)
+        char:SetAttribute("CantBall", false)
+        char:SetAttribute("Stunned", false)
+        char:SetAttribute("Ragdoll", false)
         
-        pcall(function()
-            if firetouchinterest then
-                local parts = {char:FindFirstChild("HeaderHitbox"), char:FindFirstChild("Right Leg"), char:FindFirstChild("HumanoidRootPart")}
-                for _, p in ipairs(parts) do
-                    if p then
-                        firetouchinterest(ball, p, 0)
-                        firetouchinterest(ball, p, 1)
-                    end
-                end
+        if ball.Parent ~= Workspace and ball.Parent ~= char then
+            local enemyChar = ball.Parent
+            local eHrp = enemyChar:FindFirstChild("HumanoidRootPart")
+            if eHrp then
+                hrp.CFrame = eHrp.CFrame + (eHrp.CFrame.LookVector * 1.2)
             end
-            if ball:FindFirstChild("WeldBall") and ball.WeldBall:IsA("RemoteEvent") then
-                ball.WeldBall:FireServer()
+            if Events and Events:FindFirstChild("StealBallSlide") then
+                pcall(function() Events.StealBallSlide:InvokeServer(enemyChar) end)
             end
-            if ball:FindFirstChild("GiveBall") and ball.GiveBall:IsA("BindableEvent") then
-                ball.GiveBall:Fire(char)
+            if Events and Events:FindFirstChild("SlideBegan") then
+                pcall(function() Events.SlideBegan:FireServer() end)
             end
-        end)
+        else
+            hrp.CFrame = CFrame.new(ball.Position.X, math.max(6.0, ball.Position.Y + 1.2), ball.Position.Z)
+        end
         
-        Notify("🧲 Bring Ball", "Ball retrieved directly to your feet!", 1.5, "🧲")
+        if ball:FindFirstChild("CanPickUpBall") and ball.CanPickUpBall:IsA("BoolValue") then
+            ball.CanPickUpBall.Value = true
+        end
+
+        local parts = {char:FindFirstChild("HeaderHitbox"), char:FindFirstChild("Right Leg"), char:FindFirstChild("Left Leg"), hrp}
+        for _, p in ipairs(parts) do
+            if p and firetouchinterest then
+                firetouchinterest(ball, p, 0)
+                firetouchinterest(ball, p, 1)
+            end
+        end
+
+        if ball:FindFirstChild("WeldBall") and ball.WeldBall:IsA("RemoteEvent") then
+            ball.WeldBall:FireServer()
+        end
+        if ball:FindFirstChild("GiveBall") and ball.GiveBall:IsA("BindableEvent") then
+            ball.GiveBall:Fire(char)
+        end
+
+        PlaySound(nil, 1.2)
+        Notify("🧲 Ball Claim", "Ball claimed to your possession!", 1.5, "⚽")
     end)
 end
 
@@ -2303,6 +2477,7 @@ local function CreateMobileActionBtn(icon, label, color, callback)
     nameLbl.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
+                PlaySound('Click', 1.1, 0.45)
         PlaySound(nil, 1.2)
         TweenService:Create(btn, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(35, 48, 72)}):Play()
         task.delay(0.12, function()
@@ -3269,6 +3444,103 @@ GodmodeTab:AddToggle("👻 ☢️ Phantom Ghost Dribble (Anti-Tackle)", Config.P
     Notify("Phantom Dribble", v and "ON: Automatically evades sliding tackles" or "OFF", 1.5, "👻")
 end)
 
+
+-- ⚡ Tab: Admin & Game Exploits Suite
+local AdminTab = CreateTab("Admin & Exploits", "⚡", "Server Exploits & Admin Tools")
+
+AdminTab:AddSection("⚡ Game Server Exploits (Admin Remotes)")
+AdminTab:AddButton("⏱️ 0-Cooldown All Moves (Server Bypass)", "Activate 0 CD", function()
+    pcall(function()
+        local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("NoCD") then
+            adminEv.NoCD:FireServer()
+            PlaySound("Notify", 1.3)
+            Notify("Admin Exploit", "0-Cooldown activated on server!", 1.5, "⏱️")
+        else
+            Notify("Admin Exploit", "Admin event not accessible", 1.5, "⚠️")
+        end
+    end)
+end)
+
+AdminTab:AddButton("🔥 Instant 100% Awakening Flow", "Give Awakening", function()
+    pcall(function()
+        local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("GiveAwk") then
+            adminEv.GiveAwk:FireServer()
+            PlaySound("Awakening", 1)
+            Notify("Admin Exploit", "100% Awakening granted by server!", 1.5, "🔥")
+        else
+            Notify("Admin Exploit", "Admin event not accessible", 1.5, "⚠️")
+        end
+    end)
+end)
+
+AdminTab:AddButton("🧤 God Fast-GK Dive Reflexes", "Activate Fast GK", function()
+    pcall(function()
+        local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("FastGK") then
+            adminEv.FastGK:FireServer()
+            PlaySound("Notify", 1.2)
+            Notify("Admin Exploit", "Fast GK reflexes enabled on server!", 1.5, "🧤")
+        end
+    end)
+end)
+
+AdminTab:AddSlider("⚡ Server Shot Power Multiplier", 100, 450, 280, " power", function(v)
+    pcall(function()
+        local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("ShotPower") then
+            adminEv.ShotPower:FireServer(v)
+        end
+    end)
+end)
+
+AdminTab:AddSection("👑 Free Character Unlocks")
+local charList = {"Isagi", "Kaiser", "Rin", "Sae", "Nagi", "Barou", "Chigiri", "Shidou", "Gagamaru", "Aiku", "DonLorenzo", "Kurona", "Yukimiya", "Reo", "Ronaldo", "Luffy", "Ichigo", "Naoya"}
+AdminTab:AddDropdown("Select Character to Morph", charList, "Isagi", function(chosenChar)
+    pcall(function()
+        local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("GiveCharacter") then
+            adminEv.GiveCharacter:FireServer(chosenChar)
+            PlaySound("Notify", 1.25)
+            Notify("Character Unlock", "Morphed into " .. chosenChar .. "!", 1.5, "👑")
+        end
+    end)
+end)
+
+AdminTab:AddSection("💰 Economy & Money Generator")
+AdminTab:AddButton("💵 Give Max Cash ($999,999)", "Generate Money", function()
+    pcall(function()
+        local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
+        if adminEv and adminEv:FindFirstChild("SetMoney") then
+            adminEv.SetMoney:FireServer(999999)
+            PlaySound("Goal", 1.2)
+            Notify("Economy Exploit", "Added $999,999 to your account balance!", 1.8, "💰")
+        elseif adminEv and adminEv:FindFirstChild("GlobalGiveMoney") then
+            adminEv.GlobalGiveMoney:FireServer(999999)
+            PlaySound("Goal", 1.2)
+            Notify("Economy Exploit", "Added $999,999 to account!", 1.8, "💰")
+        end
+    end)
+end)
+
+AdminTab:AddSection("⚡ Advanced Egoist Arsenal")
+AdminTab:AddButton("🧟 Lorenzo Zombie Dribble", "Zombie Dribble", function()
+    ExecuteLorenzoZombieDribble()
+end)
+
+AdminTab:AddButton("🎯 Sae Line Drive Precision Pass", "Line Drive Pass", function()
+    ExecuteSaeLineDrivePass()
+end)
+
+AdminTab:AddButton("⚡ Naoya 24 FPS Projection Burst", "24 FPS Burst", function()
+    ExecuteNaoyaProjectionBurst()
+end)
+
+AdminTab:AddButton("🌙 Ichigo Getsuga Tensho Volley", "Getsuga Volley", function()
+    ExecuteIchigoGetsugaVolley()
+end)
+
 -- ⚽ Tab 2: Metavision Aim & Shooting
 local AimTab = CreateTab("Metavision", "⚽", "Aimbot & Ballistics")
 AimTab:AddSection("Target Acquisition")
@@ -4184,9 +4456,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
         ExecuteFakeShotFeint()
     elseif input.KeyCode == Config.AutoPassKey then
         ExecuteAutoPass()
-    elseif input.KeyCode == Config.DashBurstKey then
-        ExecuteDashBurst()
     elseif input.KeyCode == Config.TPBallKey then
+        TeleportToBall()
+    elseif input.KeyCode == (Config.BringBallKey or Enum.KeyCode.B) then
         BringBallToMe()
     elseif input.KeyCode == Config.TPGoalKey then
         TeleportToGoal()
@@ -4923,51 +5195,53 @@ end)
 -- ==============================================================================
 --              METAVISION ESP STUDIO (PASS LANES & DANGER ZONES)
 -- ==============================================================================
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "BlueLockMetavisionESP"
-ESPFolder.Parent = ScreenGui
+local ESP = {
+    Folder = Instance.new("Folder"),
+    BallBillboard = Instance.new("BillboardGui"),
+    BallLabel = Instance.new("TextLabel"),
+    BallHighlight = Instance.new("Highlight"),
+    TrajectoryBeam = Instance.new("Beam"),
+    BeamAtt0 = Instance.new("Attachment", Workspace.Terrain),
+    BeamAtt1 = Instance.new("Attachment", Workspace.Terrain),
+    PassBeams = {},
+    DangerHighlights = {}
+}
 
-local ballBillboard = Instance.new("BillboardGui")
-ballBillboard.Size = UDim2.new(0, 120, 0, 36)
-ballBillboard.AlwaysOnTop = true
-ballBillboard.Enabled = false
-ballBillboard.Parent = ESPFolder
+ESP.Folder.Name = "BlueLockMetavisionESP"
+ESP.Folder.Parent = ScreenGui
 
-local ballLabel = Instance.new("TextLabel")
-ballLabel.Size = UDim2.new(1, 0, 1, 0)
-ballLabel.BackgroundTransparency = 1
-ballLabel.Text = "⚽ BALL"
-ballLabel.TextColor3 = Color3.fromRGB(0, 240, 255)
-ballLabel.Font = Enum.Font.GothamBold
-ballLabel.TextSize = 13
-ballLabel.Parent = ballBillboard
+ESP.BallBillboard.Size = UDim2.new(0, 120, 0, 36)
+ESP.BallBillboard.AlwaysOnTop = true
+ESP.BallBillboard.Enabled = false
+ESP.BallBillboard.Parent = ESP.Folder
 
-local ballHighlight = Instance.new("Highlight")
-ballHighlight.FillColor = Color3.fromRGB(0, 220, 255)
-ballHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-ballHighlight.FillTransparency = 0.4
-ballHighlight.Parent = ESPFolder
+ESP.BallLabel.Size = UDim2.new(1, 0, 1, 0)
+ESP.BallLabel.BackgroundTransparency = 1
+ESP.BallLabel.Text = "⚽ BALL"
+ESP.BallLabel.TextColor3 = Color3.fromRGB(0, 240, 255)
+ESP.BallLabel.Font = Enum.Font.GothamBold
+ESP.BallLabel.TextSize = 13
+ESP.BallLabel.Parent = ESP.BallBillboard
 
-local TrajectoryBeam = Instance.new("Beam")
-local BeamAtt0 = Instance.new("Attachment", Workspace.Terrain)
-local BeamAtt1 = Instance.new("Attachment", Workspace.Terrain)
-TrajectoryBeam.Attachment0 = BeamAtt0
-TrajectoryBeam.Attachment1 = BeamAtt1
-TrajectoryBeam.Color = ColorSequence.new({
+ESP.BallHighlight.FillColor = Color3.fromRGB(0, 220, 255)
+ESP.BallHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+ESP.BallHighlight.FillTransparency = 0.4
+ESP.BallHighlight.Parent = ESP.Folder
+
+ESP.TrajectoryBeam.Attachment0 = ESP.BeamAtt0
+ESP.TrajectoryBeam.Attachment1 = ESP.BeamAtt1
+ESP.TrajectoryBeam.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 215, 255)),
     ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 182, 205)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 240, 255))
 })
-TrajectoryBeam.Width0 = 0.4
-TrajectoryBeam.Width1 = 0.15
-TrajectoryBeam.Transparency = NumberSequence.new(0.2)
-TrajectoryBeam.CurveSize0 = 3
-TrajectoryBeam.CurveSize1 = -3
-TrajectoryBeam.Enabled = false
-TrajectoryBeam.Parent = ESPFolder
-
-local passBeams = {}
-local dangerHighlights = {}
+ESP.TrajectoryBeam.Width0 = 0.4
+ESP.TrajectoryBeam.Width1 = 0.15
+ESP.TrajectoryBeam.Transparency = NumberSequence.new(0.2)
+ESP.TrajectoryBeam.CurveSize0 = 3
+ESP.TrajectoryBeam.CurveSize1 = -3
+ESP.TrajectoryBeam.Enabled = false
+ESP.TrajectoryBeam.Parent = ESP.Folder
 
 RunService.RenderStepped:Connect(function()
     pcall(function()
@@ -4976,25 +5250,25 @@ RunService.RenderStepped:Connect(function()
         local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
         
         if ball and Config.BallESP then
-            ballBillboard.Enabled = true
-            ballBillboard.Adornee = ball
-            ballHighlight.Adornee = ball
+            ESP.BallBillboard.Enabled = true
+            ESP.BallBillboard.Adornee = ball
+            ESP.BallHighlight.Adornee = ball
             
             local dist = myHrp and math.floor((ball.Position - myHrp.Position).Magnitude) or 0
-            ballLabel.Text = string.format("⚽ BALL [%dm]", dist)
+            ESP.BallLabel.Text = string.format("⚽ BALL [%dm]", dist)
             
             if Config.TrajectoryESP and myChar and myChar:GetAttribute("HasBall") == true then
                 local goalPos = GetEnemyGoal()
-                BeamAtt0.WorldPosition = ball.Position
-                BeamAtt1.WorldPosition = goalPos
-                TrajectoryBeam.Enabled = true
+                ESP.BeamAtt0.WorldPosition = ball.Position
+                ESP.BeamAtt1.WorldPosition = goalPos
+                ESP.TrajectoryBeam.Enabled = true
             else
-                TrajectoryBeam.Enabled = false
+                ESP.TrajectoryBeam.Enabled = false
             end
         else
-            ballBillboard.Enabled = false
-            ballHighlight.Adornee = nil
-            TrajectoryBeam.Enabled = false
+            ESP.BallBillboard.Enabled = false
+            ESP.BallHighlight.Adornee = nil
+            ESP.TrajectoryBeam.Enabled = false
         end
 
         if Config.PassLaneESP and myHrp then
@@ -5007,7 +5281,7 @@ RunService.RenderStepped:Connect(function()
                         local dist = (tHrp.Position - myHrp.Position).Magnitude
                         
                         if dist <= 180 then
-                            local beamData = passBeams[plr]
+                            local beamData = ESP.PassBeams[plr]
                             if not beamData then
                                 local a0 = Instance.new("Attachment", Workspace.Terrain)
                                 local a1 = Instance.new("Attachment", Workspace.Terrain)
@@ -5017,9 +5291,9 @@ RunService.RenderStepped:Connect(function()
                                 b.Width0 = 0.25
                                 b.Width1 = 0.25
                                 b.Transparency = NumberSequence.new(0.3)
-                                b.Parent = ESPFolder
+                                b.Parent = ESP.Folder
                                 beamData = {Beam = b, Att0 = a0, Att1 = a1}
-                                passBeams[plr] = beamData
+                                ESP.PassBeams[plr] = beamData
                             end
 
                             local isBlocked = false
@@ -5046,18 +5320,18 @@ RunService.RenderStepped:Connect(function()
                                 and ColorSequence.new(Color3.fromRGB(255, 60, 80)) 
                                 or ColorSequence.new(Color3.fromRGB(0, 255, 140))
                             beamData.Beam.Enabled = true
-                        elseif passBeams[plr] then
-                            passBeams[plr].Beam.Enabled = false
+                        elseif ESP.PassBeams[plr] then
+                            ESP.PassBeams[plr].Beam.Enabled = false
                         end
-                    elseif passBeams[plr] then
-                        passBeams[plr].Beam.Enabled = false
+                    elseif ESP.PassBeams[plr] then
+                        ESP.PassBeams[plr].Beam.Enabled = false
                     end
-                elseif passBeams[plr] then
-                    passBeams[plr].Beam.Enabled = false
+                elseif ESP.PassBeams[plr] then
+                    ESP.PassBeams[plr].Beam.Enabled = false
                 end
             end
         else
-            for _, b in pairs(passBeams) do b.Beam.Enabled = false end
+            for _, b in pairs(ESP.PassBeams) do b.Beam.Enabled = false end
         end
 
         if Config.TackleDangerZoneESP and myHrp then
@@ -5068,13 +5342,13 @@ RunService.RenderStepped:Connect(function()
                     local dist = (eHrp.Position - myHrp.Position).Magnitude
                     
                     if dist <= 60 then
-                        local hl = dangerHighlights[plr]
+                        local hl = ESP.DangerHighlights[plr]
                         if not hl then
                             hl = Instance.new("Highlight")
                             hl.FillTransparency = 0.55
                             hl.OutlineTransparency = 0.2
-                            hl.Parent = ESPFolder
-                            dangerHighlights[plr] = hl
+                            hl.Parent = ESP.Folder
+                            ESP.DangerHighlights[plr] = hl
                         end
 
                         local isThreat = eChar:GetAttribute("Sliding") == true or eHrp.AssemblyLinearVelocity.Magnitude > 26
@@ -5082,15 +5356,15 @@ RunService.RenderStepped:Connect(function()
                         hl.FillColor = isThreat and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(255, 140, 30)
                         hl.OutlineColor = isThreat and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 180, 50)
                         hl.Enabled = true
-                    elseif dangerHighlights[plr] then
-                        dangerHighlights[plr].Enabled = false
+                    elseif ESP.DangerHighlights[plr] then
+                        ESP.DangerHighlights[plr].Enabled = false
                     end
-                elseif dangerHighlights[plr] then
-                    dangerHighlights[plr].Enabled = false
+                elseif ESP.DangerHighlights[plr] then
+                    ESP.DangerHighlights[plr].Enabled = false
                 end
             end
         else
-            for _, hl in pairs(dangerHighlights) do hl.Enabled = false end
+            for _, hl in pairs(ESP.DangerHighlights) do hl.Enabled = false end
         end
     end)
 end)
