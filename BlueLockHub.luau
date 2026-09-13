@@ -319,11 +319,21 @@ end
 -- Auto-load saved config on startup
 LoadConfig(true)
 
--- Audio Feedback & Sound Library Engine
+-- 🌸 Cozy Aesthetic Audio Feedback & Sound Library Engine
 local AudioLibrary = {
-    Click = "rbxassetid://101572333845544",
-    Toggle = "rbxassetid://91804726042928",
-    Notify = "rbxassetid://101572333845544",
+    -- Cozy UI Audio
+    Hover = "rbxassetid://119354387183704",         -- Soft relaxing UI hover flutter
+    Click = "rbxassetid://179235828",               -- Gentle satisfying cozy tap
+    Bubble = "rbxassetid://140323850218372",        -- Aesthetic cozy bubble pop
+    Whoosh = "rbxassetid://126941244422484",        -- Smooth cozy slide whoosh
+    Chime = "rbxassetid://130293516985070",         -- Mystical soft notification chime
+    Coins = "rbxassetid://6809101819",              -- Cozy reward / money chime
+    SoftTap = "rbxassetid://87437544236708",        -- Soft button tap / toggle off
+    Toggle = "rbxassetid://140323850218372",        -- Cozy toggle pop
+    Notify = "rbxassetid://130293516985070",        -- Cozy chime notification
+    TimeStop = "rbxassetid://71923755074835",       -- Bass resonance
+    
+    -- In-Game Skill & Action FX
     Awakening = "rbxassetid://95927820536197",
     Kaiser = "rbxassetid://1079408535",
     DirectShot = "rbxassetid://123691798248313",
@@ -338,7 +348,7 @@ local function PlaySound(soundKeyOrId, pitch, volume)
         local s = Instance.new("Sound")
         local assetId = AudioLibrary[soundKeyOrId] or soundKeyOrId or AudioLibrary.Click
         s.SoundId = assetId
-        s.Volume = volume or 0.55
+        s.Volume = volume or (soundKeyOrId == "Hover" and 0.18 or (soundKeyOrId == "Bubble" and 0.35 or 0.4))
         s.Pitch = pitch or 1
         s.Parent = Workspace
         s:Play()
@@ -1467,7 +1477,7 @@ local function TeleportToBall()
             targetPos = ball.Parent.HumanoidRootPart.Position
         end
         
-        hrp.CFrame = CFrame.new(targetPos.X, math.max(6.0, targetPos.Y + 2.0), targetPos.Z)
+        hrp.CFrame = CFrame.new(targetPos.X, targetPos.Y + 1.2, targetPos.Z)
         
         char:SetAttribute("CantBall", false)
         char:SetAttribute("Stunned", false)
@@ -1532,7 +1542,7 @@ local function BringBallToMe()
                 pcall(function() Events.SlideBegan:FireServer() end)
             end
         else
-            hrp.CFrame = CFrame.new(ball.Position.X, math.max(6.0, ball.Position.Y + 1.2), ball.Position.Z)
+            hrp.CFrame = CFrame.new(ball.Position.X, ball.Position.Y + 1.2, ball.Position.Z)
         end
         
         if ball:FindFirstChild("CanPickUpBall") and ball.CanPickUpBall:IsA("BoolValue") then
@@ -2844,8 +2854,11 @@ local function CreateTab(name, icon, subtitle)
         CurrentActiveTab = tabData
     end
 
+    TabButton.MouseEnter:Connect(function()
+        PlaySound("Hover", 1.0, 0.15)
+    end)
     TabButton.MouseButton1Click:Connect(function()
-        PlaySound(nil, 1.1)
+        PlaySound("Whoosh", 1.25, 0.25)
         SetActive()
     end)
 
@@ -2930,6 +2943,7 @@ local function CreateTab(name, icon, subtitle)
         ClickArea.Parent = ToggleFrame
 
         ClickArea.MouseEnter:Connect(function()
+            PlaySound("Hover", 1.05, 0.15)
             TweenService:Create(ToggleFrame, TWEEN_SMOOTH, {
                 BackgroundColor3 = Color3.fromRGB(24, 22, 42),
                 BackgroundTransparency = 0.2
@@ -2948,7 +2962,7 @@ local function CreateTab(name, icon, subtitle)
         local state = default
         ClickArea.MouseButton1Click:Connect(function()
             state = not state
-            PlaySound(nil, state and 1.2 or 0.95)
+            PlaySound(state and "Bubble" or "SoftTap", state and 1.25 or 0.95, 0.35)
             TweenService:Create(SwitchPill, TWEEN_SMOOTH, {
                 BackgroundColor3 = state and Color3.fromRGB(180, 130, 255) or Color3.fromRGB(28, 28, 44)
             }):Play()
@@ -3060,9 +3074,13 @@ local function CreateTab(name, icon, subtitle)
             if Config.AutoSave then task.spawn(function() SaveConfig(true) end) end
         end
 
+        SliderBtn.MouseEnter:Connect(function()
+            PlaySound("Hover", 1.0, 0.15)
+        end)
         SliderBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 sliding = true
+                PlaySound("SoftTap", 1.2, 0.25)
                 UpdateSlider(input)
             end
         end)
@@ -3140,11 +3158,14 @@ local function CreateTab(name, icon, subtitle)
         DBCorner.Parent = DropBtn
 
         local currentIdx = table.find(options, default) or 1
+        DropBtn.MouseEnter:Connect(function()
+            PlaySound("Hover", 1.0, 0.15)
+        end)
         DropBtn.MouseButton1Click:Connect(function()
             currentIdx = currentIdx % #options + 1
             local selected = options[currentIdx]
             DropBtn.Text = tostring(selected) .. " ▾"
-            PlaySound(nil, 1.1)
+            PlaySound("Bubble", 1.2, 0.3)
             pcall(callback, selected)
             if Config.AutoSave then task.spawn(function() SaveConfig(true) end) end
         end)
@@ -3202,6 +3223,7 @@ local function CreateTab(name, icon, subtitle)
         ActStroke.Parent = ActionBtn
 
         ActionBtn.MouseEnter:Connect(function()
+            PlaySound("Hover", 1.0, 0.15)
             TweenService:Create(ActionBtn, TWEEN_FAST, {
                 BackgroundColor3 = Color3.fromRGB(35, 30, 58),
                 TextColor3 = Color3.fromRGB(255, 165, 215)
@@ -3218,7 +3240,7 @@ local function CreateTab(name, icon, subtitle)
         end)
 
         ActionBtn.MouseButton1Click:Connect(function()
-            PlaySound(nil, 1.25)
+            PlaySound("Click", 1.05, 0.35)
             pcall(callback)
             TweenService:Create(ActionBtn, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(180, 130, 255)}):Play()
             task.delay(0.12, function()
@@ -3454,7 +3476,7 @@ AdminTab:AddButton("⏱️ 0-Cooldown All Moves (Server Bypass)", "Activate 0 CD
         local adminEv = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("AdminEvents") and ReplicatedStorage.Events.AdminEvents:FindFirstChild("Event")
         if adminEv and adminEv:FindFirstChild("NoCD") then
             adminEv.NoCD:FireServer()
-            PlaySound("Notify", 1.3)
+            PlaySound('Chime', 1.0, 0.35)
             Notify("Admin Exploit", "0-Cooldown activated on server!", 1.5, "⏱️")
         else
             Notify("Admin Exploit", "Admin event not accessible", 1.5, "⚠️")
@@ -4984,8 +5006,17 @@ RunService.RenderStepped:Connect(function(dt)
             return
         end
         
-        if ball.Position.Y < 1.2 then
-            ball.Position = Vector3.new(ball.Position.X, 2.5, ball.Position.Z)
+        -- Keep physics sphere invisible so only authentic textured soccer mesh renders
+        local fakeMesh = ball:FindFirstChild("Fake")
+        if fakeMesh and fakeMesh:IsA("BasePart") then
+            if fakeMesh.Transparency ~= 0 then fakeMesh.Transparency = 0 end
+            fakeMesh.CFrame = ball.CFrame
+            if ball.Transparency < 1 then ball.Transparency = 1 end
+        end
+
+        -- Only anti-void if ball truly falls below ground terrain into the abyss
+        if ball.Position.Y < 0.5 and ball.Parent == Workspace then
+            ball.Position = Vector3.new(ball.Position.X, 1.95, ball.Position.Z)
             ball.AssemblyLinearVelocity = Vector3.new(ball.AssemblyLinearVelocity.X, math.max(0, ball.AssemblyLinearVelocity.Y), ball.AssemblyLinearVelocity.Z)
         end
         
